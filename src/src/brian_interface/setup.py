@@ -1,5 +1,4 @@
 from setuptools import find_packages, setup
-from catkin_pkg.python_setup import generate_distutils_setup
 
 package_name = 'brian_interface'
 
@@ -18,13 +17,10 @@ setup(
     maintainer_email='my.address@gmail.com',
     description='TODO: Package description',
     license='Apache-2.0',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
         ],
     },
     
 )
-d = generate_distutils_setup(
-    packages=['brian_interface'],
-    package_dir={'': 'src'},)
+
