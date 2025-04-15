@@ -1,0 +1,63 @@
+cmake_minimum_required(VERSION 3.10)
+project(brian_project)
+
+
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD) 
+  set(CMAKE_CXX_STANDARD 14) 
+endif()
+
+# Set additional compiler options for GCC and Clang
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang") 
+  add_compile_options(-Wall -Wextra -Wpedantic -g) 
+endif()
+
+# Find necessary packages
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+
+set(SRCS {{source_files}})
+
+# Include directories
+include_directories(
+    ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/brianlib/randomkit
+    /usr/include
+)
+
+#set(OPTIMISATIONS {{ compiler_flags }})
+#add_compile_options(${OPTIMISATIONS})
+
+# Add executable for the main project
+add_executable(main ${SRCS})
+
+ament_target_dependencies(main rclcpp std_msgs sensor_msgs)
+
+# Install targets
+install(TARGETS
+  main
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+  main.bash
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY static_arrays
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  FILES json/b_control.txt {% if cyclonedds %} cyclone_profile.xml {%endif%}
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY
+  DESTINATION lib/${PROJECT_NAME}/results
+)
+ament_package()

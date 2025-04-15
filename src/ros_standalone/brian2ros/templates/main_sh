@@ -1,0 +1,13 @@
+#!/bin/bash
+
+source {{path}}/src/install/local_setup.bash
+export TURTLEBOT3_MODEL=waffle
+export BRIAN_JSON=$COLCON_PREFIX_PATH/brian_project/lib/brian_project/b_control.txt
+{% if cyclonedds %}
+export CYCLONEDDS_URI=$COLCON_PREFIX_PATH/brian_project/lib/brian_project/cyclone_profile.xml
+{% endif %}
+{% if interface %}
+rqt --standalone function 
+{% else %}
+$COLCON_PREFIX_PATH/brian_project/lib/brian_project/main
+{% endif %}

@@ -1,0 +1,151 @@
+#ifndef BRIANROS_H
+#define BRIANROS_H
+#include <stdlib.h>
+#include "objects.h"
+
+#include <time.h>
+{{ openmp_pragma('include') }}
+#include "run.h"
+#include "brianlib/common_math.h"
+
+#include <unistd.h>
+#include <cmath>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <chrono>
+#include <functional>
+#include <memory>
+#include <thread>
+#include <numeric>
+#include <ctime>
+
+#include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
+#include "std_msgs/msg/string.hpp"
+
+#include "rclcpp/rclcpp.hpp"
+{% for publisher in publishers%}
+#include "{{publisher["topic_include"]}}"
+{% endfor %}
+{% for subscriber in subscribers%}
+#include "{{subscriber["topic_include"]}}"
+{% endfor %}
+
+using namespace std::chrono_literals;
+using std::placeholders::_1;
+
+class ROS : public rclcpp::Node {
+    // This class is a ROS2 node that will be used to publish and subscribe to topics.
+    // This mean it will be used to communicate with the ROS2 ecosystem.
+public:
+
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_brian_control;
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr publisher_progress;
+    bool brian_state = false;
+    
+    {% for pub_monitor in pub_monitors %}
+    rclcpp::Publisher<std_msgs::msg::{{pub_monitor["type"]}}>::SharedPtr publisher_{{pub_monitor["name"]}};
+    {% endfor %}
+
+    {% for publisher in publishers %}
+    rclcpp::Publisher<{{publisher["topic_type"]}}>::SharedPtr publisher_{{publisher["name"]}};
+    rclcpp::TimerBase::SharedPtr timer_{{publisher["name"]}};
+    {% endfor %}
+
+    {% for subscriber in subscribers %}
+    rclcpp::Subscription<{{subscriber["topic_type"]}}>::SharedPtr subscription_{{subscriber["name"]}};
+    double {{subscriber["name"]}}_start;
+    bool {{subscriber["name"]}}_test = false;
+    int {{subscriber["name"]}}_count = 0;
+    {% endfor %}
+
+
+    ROS() : Node("ros_brian")
+    {
+        // Create all the publishers given by the user
+        {% for publisher in publishers %}
+        publisher_{{publisher["name"]}} = 
+            this->create_publisher<{{publisher["topic_type"]}}>("{{publisher["topic"]}}", 10);
+        timer_{{publisher["name"]}} = this->create_wall_timer(
+            {{publisher["rate"]}}ms, std::bind(&ROS::{{publisher["name"]}}_pub_callback, this));
+        {% endfor %}
+        //
+
+        // Create all the subscribers given by the user
+        {% for subscriber in subscribers %}
+        subscription_{{subscriber["name"]}} = 
+            this->create_subscription<{{subscriber["topic_type"]}}>(
+            "scan", rclcpp::SensorDataQoS(), std::bind(&ROS::{{subscriber["name"]}}_sub_callback, this, _1));
+        {% endfor %}  
+        //
+
+        // Create all the publisher for send the monitor data
+        {% for pub_monitor in pub_monitors %}
+            publisher_{{pub_monitor["name"]}} =
+                this->create_publisher<std_msgs::msg::{{pub_monitor["type"]}}>("{{pub_monitor["name"]}}", 10);
+        {% endfor %}    
+        //
+    }
+    
+    
+    {% for publisher in publishers %}
+    void {{publisher["name"]}}_pub_callback(){
+
+        // This function is called every time the timer is triggered
+        // It will publish the message to the topic
+        auto message = {{publisher["topic_type"]}}();
+        {% for input,reset in zip(publisher["input"], publisher["reset_value"]) %}
+                if (brian_state){
+                    message.{{input["name"]}} = {{input["value"]}};
+                } 
+                else{
+                    message.{{reset["name"]}} = {{reset["value"]}};
+                }
+        {% endfor %}
+        publisher_{{publisher["name"]}}->publish(message);        
+    }
+    {% endfor %}
+
+    {%for subscriber in subscribers%}
+    void {{subscriber["name"]}}_sub_callback(const {{subscriber["topic_type"]}}::SharedPtr msg)
+        {
+            // This function is called every time a message is received from the topic
+            // It will set the values of the variables in the brian object
+            
+            // Time calculation
+            // This is used to calculate the time between the start of gazebo and the first message
+            if(!{{subscriber["name"]}}_test){
+                {{subscriber["name"]}}_start = rclcpp::Time(msg->header.stamp).seconds();
+                {{subscriber["name"]}}_test = true;
+            }
+            double current_time = rclcpp::Time(msg->header.stamp).seconds();
+
+
+            {% for put in subscriber["out"] %}
+                int i_{{put["name"]}}[] = { {{", ".join(put["index"])}} }; 
+                {# Check if the subscriber is LaserScan #}
+                {% if put["name"] == "ranges" %}
+                    for(int i = 0; i < std::size(i_{{put["name"]}}); ++i){ 
+                        int angle = i_{{put["name"]}}[i]/(msg->angle_increment*(180/M_PI));
+                        if(msg->ranges[angle] < msg->range_max){
+                            brian::{{put["var"]}}[i] = msg->ranges[angle];
+                        }
+                        else{
+                            brian::{{put["var"]}}[i] = msg->range_max;
+                        }
+                    }
+                {% else %}
+                    for(int i = 0; i < std::size(i_{{put["name"]}}); ++i){
+                        brian::{{put["var"]}}[i] = msg->{{put["name"]}};
+                    }
+                {% endif %}
+            {% endfor %}
+            brian::{{subscriber["var_time"]}}[0] = (double)(current_time - {{subscriber["name"]}}_start);
+        }
+    {%endfor%}
+};
+
+extern std::shared_ptr<ROS> ros_obj;
+
+#endif
