@@ -31,3 +31,7 @@ source_suffix = {
     '.rst': 'restructuredtext',
     '.md': 'markdown',
 }
+
+intersphinx_mapping = {
+    'brian2': ('https://brian2.readthedocs.io/en/stable/', None),
+}

@@ -3084,7 +3084,7 @@ packages:
 - pypi: ./src/src/brian_interface
   name: brian-interface
   version: 0.0.0
-  sha256: cec4ae2e58c65097d5b773efa5126db3b245e8987b4754f8d0940bad0b2a186f
+  sha256: 235b5ee75497de45d3b64698d8dd59cb41df5083080b53f0a843feddcd59490d
   requires_dist:
   - setuptools
 - conda: https://conda.anaconda.org/conda-forge/linux-64/brian2-2.8.0.4-py311h5b7b71f_0.conda
