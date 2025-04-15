@@ -7,3 +7,4 @@ tmp/
 
 .vscode/
 docs/_build/
+*.egg-info/

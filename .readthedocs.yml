@@ -1,0 +1,12 @@
+version: 2
+build:
+  os: "ubuntu-22.04"
+  tools:
+    python: "mambaforge-23.11"
+  jobs:
+    install:
+      - mamba install -c conda-forge -c nodefaults pixi
+      - pixi install -e dev
+    build:
+      html:
+        - pixi run -e dev sphinx-build -M html docs/source $READTHEDOCS_OUTPUT/html/
