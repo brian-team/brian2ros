@@ -6,5 +6,4 @@ build:
   commands:
       - mamba install -c conda-forge -c nodefaults pixi
       - pixi install -e dev
-      - export PYTHONPATH=./src/ros_standalone/:$PYTHONPATH
-      - pixi run -e dev sphinx-build -M html docs $READTHEDOCS_OUTPUT
+      - PYTHONPATH=./src/ros_standalone/:$PYTHONPATH pixi run -e dev sphinx-build -M html docs $READTHEDOCS_OUTPUT
