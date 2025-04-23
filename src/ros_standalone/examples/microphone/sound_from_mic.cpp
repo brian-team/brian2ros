@@ -4,8 +4,6 @@
 #include <vector>
 
 #define CHANNELS 2       // Stéréo
-#define SAMPLE_RATE 48000
-#define BUFFER_SIZE 128  // Taille du buffer d'entrée
 PaStream* _init_input_stream()
 {
     PaStream* stream;

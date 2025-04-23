@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(brian_project)
 
-
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD) 
   set(CMAKE_CXX_STANDARD 14) 
@@ -9,7 +8,7 @@ endif()
 
 # Set additional compiler options for GCC and Clang
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang") 
-  add_compile_options(-Wall -Wextra -Wpedantic -g) 
+  add_compile_options({{ compiler_flags }}) 
 endif()
 
 # Find necessary packages
@@ -19,20 +18,20 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
 set(SRCS {{source_files}})
-
 # Include directories
 include_directories(
-    ${CMAKE_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/brianlib/randomkit
-    /usr/include
+  ${CMAKE_SOURCE_DIR}
+  {{ include_dirs }}
 )
 
-#set(OPTIMISATIONS {{ compiler_flags }})
-#add_compile_options(${OPTIMISATIONS})
+set(OPTIMISATIONS {{ compiler_flags }})
+add_compile_options(${OPTIMISATIONS})
 
 # Add executable for the main project
 add_executable(main ${SRCS})
-
+target_link_libraries(main
+'portaudio'
+)
 ament_target_dependencies(main rclcpp std_msgs sensor_msgs)
 
 # Install targets

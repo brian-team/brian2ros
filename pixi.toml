@@ -21,6 +21,9 @@ make = ">=4.4.1,<5"
 setuptools = ">=78.1.0,<79"
 colcon-common-extensions = ">=0.3.0,<0.4"
 jinja2 = ">=3.1.6,<4"
+alsa-lib = ">=1.2.14,<2"
+alsa-plugins = ">=1.2.12,<2"
+pulseaudio = ">=17.0,<18"
 
 [pypi-dependencies]
 brian-interface = { path = "./src/src/brian_interface" }
