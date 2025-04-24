@@ -9,7 +9,7 @@ sound_speed = 300*metre/second
 
 # Ears parameters
 sigma_ear = .1
-tau_ear = 1*ms
+tau_ear = 0.5*ms
 angular_speed = 2 * pi / second # 1 turn/second
 max_delay = 0.62*ms 
 
@@ -19,9 +19,9 @@ tau = 1*ms
 sigma = .1
 
 # Thresholds
-a = 1
-p = 1.1
-tau_thresh = 10*ms
+a = 0.5
+p = 1.2
+tau_thresh = 1000*ms
 
 set_device('ros_standalone',directory="src/src/brian_project", debug=True)
 
@@ -42,10 +42,7 @@ def get_sample(t,side):
 
 # Ears and sound motion around the head (constant angular speed)
 eqs_ears = '''
-dx/dt = (get_sample(t-delay,i)-x)/tau_ear+sigma_ear*(2./tau_ear)**.5*xi : 1 (unless refractory)
-delay = distance*sin(theta) : second
-distance : second # distance to the centre of the head in time units
-dtheta/dt = angular_speed : radian
+dx/dt = (get_sample(t,i) - x)/tau_ear : 1 
 dthresh/dt = (a * x - thresh) / tau_thresh : 1
 '''
 
@@ -53,11 +50,9 @@ reset = '''
 x = 0
 thresh = p * thresh
 '''
-ears = NeuronGroup(2, eqs_ears, threshold='x>thresh', reset=reset,
-                   refractory=2.5*ms, name='ears', method='euler')
-ears.distance = [-.5 * max_delay, .5 * max_delay]
+ears = NeuronGroup(2, eqs_ears, threshold='x>thresh',reset=reset,
+                    name='ears', method='euler')
 ears.thresh = [1, 1]
-traces = StateMonitor(ears, 'delay', record=True)
 son = StateMonitor(ears, 'x', record=True)
 th = StateMonitor(ears, 'thresh', record=True)
 eqs_neurons = '''

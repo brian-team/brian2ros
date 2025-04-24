@@ -8,7 +8,8 @@ version = "0.1.0"
 [tasks]
 paramecium = "python src/ros_standalone/examples/basic/paramecium.py"
 briantenberg = "python src/ros_standalone/examples/basic/briantenberg.py"
-jeffres = "python src/ros_standalone/examples/microphone/jeffres.py"
+jeffres_record = "python src/ros_standalone/examples/microphone/jeffres_record.py"
+jeffres_micro = "python src/ros_standalone/examples/microphone/jeffres_micro.py"
 
 [dependencies]
 python = ">=3.11.12,<3.12"
