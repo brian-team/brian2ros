@@ -33,18 +33,17 @@ sound_right = TimedArray(stereo_data[:, 1], dt=defaultclock.dt)
 # Ears and sound motion around the head (constant angular speed)
 eqs_ears = '''
 dx/dt = (sound - x)/tau_ear : 1 
-sound = sound_left(sample) * (1 - i) + sound_right(t) * i : 1
+sound = sound_left(sample) * (1 - i) + sound_right(sample) * i : 1
 sample = t - 5*second * (t/second//5) : second
-dthresh/dt = (a * x - thresh) / tau_thresh : 1
+thresh : 1
 '''
 
 reset = '''
 x = 0
-thresh = p * thresh
 '''
 ears = NeuronGroup(2, eqs_ears, threshold='x>thresh',reset=reset,
                     name='ears', method='euler')
-ears.thresh = [1, 1]
+ears.thresh = [0.15, 0.04]
 son = StateMonitor(ears, 'x', record=True)
 th = StateMonitor(ears, 'thresh', record=True)
 eqs_neurons = '''
