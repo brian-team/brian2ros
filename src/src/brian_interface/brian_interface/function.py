@@ -95,7 +95,7 @@ class MyPlugin(Plugin):
                         name=monitor["name"],
                         symbol=symbol,
                         symbolPen=symbolPen,
-                        symbolSize=10,
+                        symbolSize=4,
                         pen=None,
                     )
                     self.plot_widgets[monitor["name"]] = plot_widget

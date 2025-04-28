@@ -55,3 +55,4 @@ python-sounddevice = ">=0.5.0,<0.6"
 dev = { features = ["dev", "gz"], solve-group = "default" }
 gz = { features = ["gz"], solve-group = "default" }
 audio = { features = ["gz", "audio"], solve-group = "default"}
+audio_robot = { features = ["audio"], solve-group = "default"}
