@@ -472,7 +472,6 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
         for item in compiler_flags:
             if item == '-std=c++11':
                 compiler_flags.remove(item)
-        print("Compiler flags : ", compiler_flags)
 
         linker_flags = (
             ccompiler.gen_lib_options(
@@ -746,9 +745,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
     ):
         #! OVERRIDE the generate_makefile method from the CPPStandaloneDevice class. !#
         # This function is override to generate a CMakeLists.txt file instead of a Makefile
-        print("Linker flags : ", linker_flags)
-        print("Compiler flags : ", compiler_flags)
-       
+
         cmakefile = self.templater.CMakeLists(
             None,
             None,
@@ -926,7 +923,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     json.dump(data_for_rqt, f)
                 xc = os.system(
                     'cd ' + self.file_path + '/../../ && MAKEFLAGS="-j1 -l1" colcon build' 
-                    + (' --packages-skip turtlebot3_gz brian_interface' if not prefs.devices.ros_standalone.interface else '')
+                    + (' --packages-skip turtlebot3_gz brian_interface --packages-ignore turtlebot3_gz brian_interface' if not prefs.devices.ros_standalone.interface else '')
                 )
 
                 if xc != 0:
