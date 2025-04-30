@@ -4,6 +4,7 @@ from scipy.io import wavfile as wav
 
 set_device('ros_standalone',directory="src/src/brian_project", debug=True)
 
+prefs.devices.ros_standalone.interface = False
 sample_rate = 48 * kHz
 buffer_size = 16
 defaultclock.dt = 1 / sample_rate
@@ -11,17 +12,17 @@ defaultclock.dt = 1 / sample_rate
 # Ears parameters
 sigma_ear = .1
 tau_ear = 0.5*ms
-max_delay = 0.23*ms 
+max_delay = 0.62*ms 
 
 # Coincidence detectors
 num_neurons = 30
-tau = 0.5*ms
-sigma = .1
+tau = 0.2*ms
 
 # Thresholds
 a = 0.1
-p = 3.5
+p = 2.7
 tau_thresh = 2*ms
+
 
 
 # === Sound input from microphone ===
@@ -59,7 +60,7 @@ dv/dt = -v / tau : 1
 neurons = NeuronGroup(num_neurons, eqs_neurons, threshold='v>1',
                       reset='v = 0', name='neurons', method='euler')
 
-synapses = Synapses(ears, neurons, on_pre='v += .5')
+synapses = Synapses(ears, neurons, on_pre='v += .65')
 synapses.connect()
 
 synapses.delay['i==0'] = '(1.0*j)/(num_neurons-1)*1.1*max_delay'

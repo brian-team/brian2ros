@@ -2,7 +2,7 @@
 authors = ["macauwet <cauwet@isir.upmc.fr>"]
 channels = ["robostack-jazzy", "conda-forge"]
 name = "ros_brian"
-platforms = ["linux-64"]
+platforms = ["linux-64", "linux-aarch64"]
 version = "0.1.0"
 
 [tasks]
@@ -55,4 +55,4 @@ python-sounddevice = ">=0.5.0,<0.6"
 dev = { features = ["dev", "gz"], solve-group = "default" }
 gz = { features = ["gz"], solve-group = "default" }
 audio = { features = ["gz", "audio"], solve-group = "default"}
-audio_robot = { features = ["audio"], solve-group = "default"}
+audiorobot = { features = ["audio"], solve-group = "default"}

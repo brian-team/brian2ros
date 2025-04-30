@@ -925,7 +925,8 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
 
                     json.dump(data_for_rqt, f)
                 xc = os.system(
-                    'cd ' + self.file_path + '/../../ && MAKEFLAGS="-j1 -l1" colcon build --executor sequential --packages-up-to brian_project'
+                    'cd ' + self.file_path + '/../../ && MAKEFLAGS="-j1 -l1" colcon build' 
+                    + (' --packages-skip turtlebot3_gz brian_interface' if not prefs.devices.ros_standalone.interface else '')
                 )
 
                 if xc != 0:

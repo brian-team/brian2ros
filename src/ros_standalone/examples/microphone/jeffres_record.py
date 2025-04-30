@@ -15,12 +15,11 @@ max_delay = 0.62*ms
 
 # Coincidence detectors
 num_neurons = 30
-tau = 0.5*ms
-sigma = .1
+tau = 0.2*ms
 
 # Thresholds
 a = 0.1
-p = 3.5
+p = 2.7
 tau_thresh = 2*ms
 
 sample_rate, stereo_data = wav.read("src/ros_standalone/examples/microphone/500Hz.wav")
@@ -45,12 +44,12 @@ ears = NeuronGroup(2, eqs_ears, threshold='x>thresh',reset=reset,
 ears.thresh = [1, 1]
 
 eqs_neurons = '''
-dv/dt = -v / tau + sigma * (2 / tau)**.5 * xi : 1
+dv/dt = -v / tau : 1
 '''
 neurons = NeuronGroup(num_neurons, eqs_neurons, threshold='v>1',
                       reset='v = 0', name='neurons', method='euler')
 
-synapses = Synapses(ears, neurons, on_pre='v += .5')
+synapses = Synapses(ears, neurons, on_pre='v += .65')
 synapses.connect()
 
 synapses.delay['i==0'] = '(1.0*j)/(num_neurons-1)*1.1*max_delay'
