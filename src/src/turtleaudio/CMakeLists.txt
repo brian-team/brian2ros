@@ -14,5 +14,8 @@ install(TARGETS
   audio_record
   DESTINATION lib/${PROJECT_NAME}
 )
+target_link_libraries(audio_record
+  'portaudio'
+)
 
 ament_package()
