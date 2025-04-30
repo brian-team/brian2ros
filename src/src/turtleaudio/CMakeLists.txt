@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(audio_capture)
+project(turtleaudio)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
