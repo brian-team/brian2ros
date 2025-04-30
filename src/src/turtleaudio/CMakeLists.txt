@@ -8,10 +8,10 @@ find_package(std_msgs REQUIRED)
 include_directories(include)
 
 add_executable(audio_record src/audio_record.cpp)
-ament_target_dependencies(audio_publisher rclcpp std_msgs)
+ament_target_dependencies(audio_record rclcpp std_msgs)
 
 install(TARGETS
-  audio_publisher
+  audio_record
   DESTINATION lib/${PROJECT_NAME}
 )
 
