@@ -7,7 +7,7 @@ find_package(std_msgs REQUIRED)
 
 include_directories(include)
 
-add_executable(audio_publisher src/audio_publisher.cpp)
+add_executable(audio_record src/audio_record.cpp)
 ament_target_dependencies(audio_publisher rclcpp std_msgs)
 
 install(TARGETS
