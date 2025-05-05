@@ -76,6 +76,16 @@ HEADER_FILES = {
     "UInt16": "std_msgs/msg/u_int16.hpp",
     "UInt32": "std_msgs/msg/u_int32.hpp",
     "UInt64": "std_msgs/msg/u_int64.hpp",
+    "UInt8MultiArray": "std_msgs/msg/u_int8_multi_array.hpp",
+    "UInt16MultiArray": "std_msgs/msg/u_int16_multi_array.hpp",
+    "UInt32MultiArray": "std_msgs/msg/u_int32_multi_array.hpp",
+    "UInt64MultiArray": "std_msgs/msg/u_int64_multi_array.hpp",
+    "Float32MultiArray": "std_msgs/msg/float32_multi_array.hpp",
+    "Float64MultiArray": "std_msgs/msg/float64_multi_array.hpp",
+    "Int8MultiArray": "std_msgs/msg/int8_multi_array.hpp",
+    "Int16MultiArray": "std_msgs/msg/int16_multi_array.hpp",
+    "Int32MultiArray": "std_msgs/msg/int32_multi_array.hpp",
+    "Int64MultiArray": "std_msgs/msg/int64_multi_array.hpp",
     # Additional messages from action_msgs
     "GoalInfo": "action_msgs/msg/goal_info.hpp",
     "GoalStatus": "action_msgs/msg/goal_status.hpp",
@@ -877,6 +887,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
             code_objects=list(self.code_objects.values()),
             report_func=self.report_func,
             dt=float(self.defaultclock.dt),
+            interface=prefs.devices.ros_standalone.interface,
         )
 
         writer.write("brianros.h", brianros_tmp)
