@@ -16,6 +16,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(turtleaudio REQUIRED)
 
 set(SRCS {{source_files}})
 # Include directories
@@ -32,7 +33,7 @@ add_executable(main ${SRCS})
 target_link_libraries(main
 'portaudio'
 )
-ament_target_dependencies(main rclcpp std_msgs sensor_msgs)
+ament_target_dependencies(main rclcpp std_msgs sensor_msgs turtleaudio)
 
 # Install targets
 install(TARGETS

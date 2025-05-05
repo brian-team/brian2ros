@@ -5,6 +5,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include "std_msgs/msg/float64_multi_array.hpp"
 #include "turtleaudio/msg/stereo_audio_block.hpp"
+#include <time.h>
+#include "std_msgs/msg/header.hpp"
 
 #define CHANNELS 2       // Stéréo
 #define SAMPLE_RATE 48000
@@ -79,6 +81,8 @@ class AudioRecorder : public rclcpp::Node
           msg.left.data[i] = static_cast<double>(buffer[2 * i]);
           msg.right.data[i] = static_cast<double>(buffer[2 * i + 1]);
       }
+
+      msg.header.stamp = this->now();
 
       publisher->publish(msg);
     }
