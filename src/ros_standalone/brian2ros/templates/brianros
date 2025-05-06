@@ -76,7 +76,7 @@ public:
         {% for subscriber in subscribers %}
         subscription_{{subscriber["name"]}} = 
             this->create_subscription<{{subscriber["topic_type"]}}>(
-            "scan", rclcpp::SensorDataQoS(), std::bind(&ROS::{{subscriber["name"]}}_sub_callback, this, _1));
+            "{{subscriber["topic"]}}", rclcpp::SensorDataQoS(), std::bind(&ROS::{{subscriber["name"]}}_sub_callback, this, _1));
         {% endfor %}  
         //
 
@@ -135,9 +135,12 @@ public:
                             brian::{{put["var"]}}[i] = msg->range_max;
                         }
                     }
+              
                 {% else %}
                     for(int i = 0; i < std::size(i_{{put["name"]}}); ++i){
                         brian::{{put["var"]}}[i] = msg->{{put["name"]}}.data[i_{{put["name"]}}[i]];
+                        brian::{{put["buffer_name"]}}[0] = 0;
+                        
                     }
                 {% endif %}
             {% endfor %}

@@ -17,15 +17,12 @@ audio = Subscriber(
 )
 
 eq = Equations('''
-sample : integer (shared)
-x = audio(t,0,sample) * i + audio(t,1,sample) * (1 - i) : 1
+x = audio(t,0,0) * i + audio(t,1,1) * (1 - i) : 1
 ''')
 
 group = NeuronGroup(2,eq,name="ears",method="euler",threshold="x>10",reset="")
-group.run_regularly('sample = (sample + 1) % 256', dt=(1 / 48_000) * second)
 
 state_x = StateMonitor(group, "x", record=True)
-#state_sample = StateMonitor(group, "sample", record=True)
 
 run(10000 * second, report="text", report_period=0.1 * second)
 

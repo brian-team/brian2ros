@@ -210,7 +210,7 @@ class Subscriber(Function):
         
         self.create_code()
 
-    def _pose_obj(self, t, index):
+    def _pose_obj(self, t, var_index):
         pass
     
     def create_code(self):
@@ -219,7 +219,7 @@ class Subscriber(Function):
         code = (
             """double """
             + self.name
-            + """(double t,int index,int var_index){
+            + """(double t,int var_index, int index){
                 //std::cout << "t = " << t << "var_time = " <<  brian::"""
             + self.var_time_name
             + """[0] << std::endl;
@@ -238,14 +238,28 @@ class Subscriber(Function):
         for i, (out_name, out_value) in enumerate(self.output.items()):
                 
             # Add the Brian name of the output to the function.
-            code += """brian::_array_""" + self.name + """_var_""" + out_name + """[index]"""
-
+            code += """brian::_array_""" + self.name + """_var_""" + out_name + """[static_cast<int>(brian::_array_""" + self.name + """_buffer_""" + out_name + """[0])]"""
+            
             # Add a comma if it is not the last output.
             if i != len(self.output) - 1:
                 code += ","
 
         code += """
                 };
+                """
+        for i, (out_name, out_value) in enumerate(self.output.items()):
+            # Add the output's buffer to the function.
+            code += """
+                if (brian::_array_""" + self.name + """_buffer_""" + out_name + """[0] < """ + str(len(out_value)) + """) {
+                    brian::_array_""" + self.name + """_buffer_""" + out_name + """[0]++;
+                    }
+                else {
+                    std::cout << "Buffer is full for """ + out_name + """." << std::endl;
+                    }
+                    """
+
+        code += """
+
                 return result[var_index];  
                 }"""
 
@@ -258,8 +272,6 @@ class LaserScanSubscriber(Subscriber):
     
     def __init__(self, name, output, header=None):
         super().__init__(name=name, topic="LaserScan", topic_type="sensor_msgs/msg/LaserScan", output=output, header=header)
-    
-   
     
 class ROSStandaloneDevice(device.CPPStandaloneDevice):
     def __init__(self):
@@ -726,11 +738,21 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     self.add_array(var_tmp)
                     self.init_with_zeros(var_tmp, var_tmp.dtype)
 
+                    # Create a Brian variable buffer to find the name for the function.
+                    var_buffer = ArrayVariable(
+                        "buffer_" + out_name,
+                        size=1,
+                        owner=group,
+                        device=get_device(),
+                    )
+                    self.add_array(var_buffer)
+                    self.init_with_zeros(var_buffer, var_buffer.dtype)
                     arg.outs.append(
                         {
                             "name": out_name,
                             "index": [str(o) for o in out_value],
                             "var": self.get_array_name(var_tmp),
+                            "buffer_name": self.get_array_name(var_buffer),
                         }
                     )
             except Exception as e:
@@ -743,6 +765,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
             self.templater.env.globals["subscribers"].append(
                 {
                     "name": arg.name,
+                    "topic": arg.topic,
                     "topic_type": "::".join(arg.topic_type.split("/")),
                     "topic_include": header_path,
                     "var_time": self.get_array_name(var_time),
