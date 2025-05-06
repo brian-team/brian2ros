@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <vector>
 #include <rclcpp/rclcpp.hpp>
-#include "std_msgs/msg/float64_multi_array.hpp"
+#include "std_msgs/msg/float32_multi_array.hpp"
 #include "turtleaudio/msg/stereo_audio_block.hpp"
 #include <time.h>
 #include "std_msgs/msg/header.hpp"
@@ -59,7 +59,7 @@ class AudioRecorder : public rclcpp::Node
       publisher = this->create_publisher<StereoAudioBlock>("audio_data", 10);
       buffer.resize(BUFFER_SIZE * CHANNELS);
       timer = this->create_wall_timer(
-       5ms, std::bind(&AudioRecorder::get_sample, this));
+       (BUFFER_SIZE / SAMPLE_RATE)ms, std::bind(&AudioRecorder::get_sample, this));
     }
   private:
     void get_sample() 
@@ -78,8 +78,8 @@ class AudioRecorder : public rclcpp::Node
 
       for (size_t i = 0; i < BUFFER_SIZE; ++i)
       {
-          msg.left.data[i] = static_cast<double>(buffer[2 * i]);
-          msg.right.data[i] = static_cast<double>(buffer[2 * i + 1]);
+          msg.left.data[i] = static_cast<float>(buffer[2 * i]);
+          msg.right.data[i] = static_cast<float>(buffer[2 * i + 1]);
       }
 
       msg.header.stamp = this->now();
