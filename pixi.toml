@@ -11,6 +11,10 @@ briantenberg = "python src/ros_standalone/examples/basic/briantenberg.py"
 jeffres_record = "python src/ros_standalone/examples/microphone/jeffres_record.py"
 jeffres_micro = "python src/ros_standalone/examples/microphone/jeffres_micro.py"
 
+colcon_recorder = "colcon build --packages-select turtleaudio"
+source_robot = { cmd = ["source install/setup.bash"], depends-on = ["colcon_recorder"]}
+robot_audio = { cmd = ["ros2 run turtleaudio audio_record"], depends-on = ["source_robot"]}
+
 [dependencies]
 python = ">=3.11.12,<3.12"
 catkin_pkg = ">=1.0.0,<2"
