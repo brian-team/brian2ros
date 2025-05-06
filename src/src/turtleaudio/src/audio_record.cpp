@@ -59,7 +59,7 @@ class AudioRecorder : public rclcpp::Node
       publisher = this->create_publisher<StereoAudioBlock>("audio_data", 10);
       buffer.resize(BUFFER_SIZE * CHANNELS);
       timer = this->create_wall_timer(
-       (BUFFER_SIZE / SAMPLE_RATE), std::bind(&AudioRecorder::get_sample, this));
+       5ms, std::bind(&AudioRecorder::get_sample, this));
     }
   private:
     void get_sample() 
