@@ -198,7 +198,7 @@ class Subscriber(Function):
         A function that returns the value of the subscribed topic.
     """
     def __init__(self, name, topic, topic_type, output, header=None):
-        super().__init__(self._pose_obj, arg_units=(second, 1, 1), return_unit=1)
+        super().__init__(self._pose_obj, arg_units=(second, 1), return_unit=1)
 
         self.name = name
         self.topic = topic
@@ -219,7 +219,7 @@ class Subscriber(Function):
         code = (
             """double """
             + self.name
-            + """(double t,int var_index, int index){
+            + """(double t,int var_index){
                 //std::cout << "t = " << t << "var_time = " <<  brian::"""
             + self.var_time_name
             + """[0] << std::endl;
@@ -250,11 +250,11 @@ class Subscriber(Function):
         for i, (out_name, out_value) in enumerate(self.output.items()):
             # Add the output's buffer to the function.
             code += """
-                if (brian::_array_""" + self.name + """_buffer_""" + out_name + """[0] < """ + str(len(out_value)) + """) {
+                if (brian::_array_""" + self.name + """_buffer_""" + out_name + """[0] < """ + str(len(out_value)) + """ && var_index == """ + str(i) + """) {
                     brian::_array_""" + self.name + """_buffer_""" + out_name + """[0]++;
                     }
                 else {
-                    std::cout << "Buffer is full for """ + out_name + """." << std::endl;
+                    //std::cout << "Buffer is full for """ + out_name + """." << std::endl;
                     }
                     """
 

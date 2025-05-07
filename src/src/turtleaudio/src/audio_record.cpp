@@ -84,7 +84,7 @@ class AudioRecorder : public rclcpp::Node
           msg.left.data[i] = static_cast<float>(buffer[2 * i]);
           msg.right.data[i] = static_cast<float>(buffer[2 * i + 1]);
       }
-
+      msg.header.frame_id = std::to_string(frame_count);
       msg.header.stamp = this->now();
       frame_count++;
       RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count);

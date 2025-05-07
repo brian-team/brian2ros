@@ -12,17 +12,18 @@ audio = Subscriber(
     name="audio",
     topic="audio_data",
     topic_type="turtleaudio/msg/StereoAudioBlock",
-    output={"left": np.int64(np.linspace(0,255,256)), "right": np.int64(np.linspace(0,255,256))},
+    output={"left": np.int64(np.linspace(0,1023,1024)), "right": np.int64(np.linspace(0,1023,1024))},
     header="turtleaudio/msg/stereo_audio_block.hpp",
 )
 
 eq = Equations('''
-x = audio(t,0,0) * i + audio(t,1,1) * (1 - i) : 1
+x = audio(t,i) : 1
 ''')
 
 group = NeuronGroup(2,eq,name="ears",method="euler",threshold="x>10",reset="")
 
 state_x = StateMonitor(group, "x", record=True)
+
 
 run(10000 * second, report="text", report_period=0.1 * second)
 
