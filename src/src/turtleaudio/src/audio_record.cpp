@@ -12,6 +12,7 @@
 #define SAMPLE_RATE 48000
 #define BUFFER_SIZE 256 
 
+#define MAX_FRAMES 500 // Nombre maximum de frames à lire
 using namespace std::chrono_literals;
 using turtleaudio::msg::StereoAudioBlock;
 
@@ -19,7 +20,6 @@ PaStream* _init_input_stream()
 {
     PaStream* stream;
     PaError err;
-
     err = Pa_Initialize();
     if (err != paNoError)
     {
@@ -58,8 +58,8 @@ class AudioRecorder : public rclcpp::Node
     {
       publisher = this->create_publisher<StereoAudioBlock>("audio_data", 10);
       buffer.resize(BUFFER_SIZE * CHANNELS);
-      auto count = BUFFER_SIZE / SAMPLE_RATE;
-      auto period = std::chrono::milliseconds(count * 1000);
+      auto seconds = static_cast<double>(BUFFER_SIZE) / SAMPLE_RATE;
+      auto period = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(seconds));
       timer = this->create_wall_timer(
        period, std::bind(&AudioRecorder::get_sample, this));
     }
@@ -67,6 +67,7 @@ class AudioRecorder : public rclcpp::Node
     void get_sample() 
     {        
       static PaStream* stream = _init_input_stream();
+      
       PaError err = Pa_ReadStream(stream, buffer.data(), BUFFER_SIZE);
       if (err != paNoError)
       {
@@ -85,16 +86,18 @@ class AudioRecorder : public rclcpp::Node
       }
 
       msg.header.stamp = this->now();
-      if (msg.header.stamp.sec == 60)
+      frame_count++;
+      if (frame_count >= max_frames)
       {
-        rclcpp::shutdown(); 
-        return;
+          RCLCPP_INFO(this->get_logger(), "Nombre maximum de frames atteint, arrêt du noeud.");
+          rclcpp::shutdown(); 
       }
       publisher->publish(msg);
     }
     std::vector<float> buffer;
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher;
+    int frame_count = 0;
 };
 
 // Main entry point
