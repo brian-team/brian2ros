@@ -87,6 +87,7 @@ class AudioRecorder : public rclcpp::Node
 
       msg.header.stamp = this->now();
       frame_count++;
+      RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count);
       if (frame_count >= MAX_FRAMES)
       {
           RCLCPP_INFO(this->get_logger(), "Nombre maximum de frames atteint, arrêt du noeud.");
