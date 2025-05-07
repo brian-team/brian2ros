@@ -58,8 +58,10 @@ class AudioRecorder : public rclcpp::Node
     {
       publisher = this->create_publisher<StereoAudioBlock>("audio_data", 10);
       buffer.resize(BUFFER_SIZE * CHANNELS);
+      auto count = BUFFER_SIZE / SAMPLE_RATE;
+      auto period = std::chrono::milliseconds(count * 1000);
       timer = this->create_wall_timer(
-       5ms, std::bind(&AudioRecorder::get_sample, this));
+       period, std::bind(&AudioRecorder::get_sample, this));
     }
   private:
     void get_sample() 
@@ -83,7 +85,11 @@ class AudioRecorder : public rclcpp::Node
       }
 
       msg.header.stamp = this->now();
-
+      if (msg.header.stamp.sec == 60)
+      {
+        rclcpp::shutdown(); 
+        return;
+      }
       publisher->publish(msg);
     }
     std::vector<float> buffer;
