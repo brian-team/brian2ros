@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <vector>
 #include <rclcpp/rclcpp.hpp>
-#include "std_msgs/msg/float32_multi_array.hpp"
+#include "std_msgs/msg/int16_multi_array.hpp"
 #include "turtleaudio/msg/stereo_audio_block.hpp"
 #include <time.h>
 #include "std_msgs/msg/header.hpp"
@@ -30,7 +30,7 @@ PaStream* _init_input_stream()
     err = Pa_OpenDefaultStream(&stream,
                                CHANNELS,     // 2 canaux d'entrée (stéréo)
                                0,            // Pas de sortie
-                               paFloat32,
+                               paInt16,
                                SAMPLE_RATE,
                                BUFFER_SIZE,
                                NULL,
@@ -75,8 +75,8 @@ class AudioRecorder : public rclcpp::Node
       msg.right.data.resize(BUFFER_SIZE);
       for (size_t i = 0; i < BUFFER_SIZE; ++i)
       {
-          msg.left.data[i] = static_cast<int>(10 * sin(2 * M_PI * 440 * i / SAMPLE_RATE));
-          msg.right.data[i] = static_cast<int>(10 * sin(2 * M_PI * 440 * i / SAMPLE_RATE));
+          msg.left.data[i] = static_cast<int>(3000 * sin(2 * M_PI * 440 * i / SAMPLE_RATE));
+          msg.right.data[i] = static_cast<int>(3000 * sin(2 * M_PI * 440 * i / SAMPLE_RATE));
       }
       msg.header.frame_id = std::to_string(frame_count);
       msg.header.stamp = this->now();
@@ -114,10 +114,11 @@ class AudioRecorder : public rclcpp::Node
       {
           RCLCPP_INFO(this->get_logger(), "Nombre maximum de frames atteint, arrêt du noeud.");
           rclcpp::shutdown(); 
+          Pa_Terminate();
       }
       publisher->publish(msg);
     }
-    std::vector<float> buffer;
+    std::vector<int16_t> buffer;
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher;
     int frame_count = 0;
