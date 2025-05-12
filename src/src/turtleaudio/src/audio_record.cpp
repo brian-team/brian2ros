@@ -7,6 +7,7 @@
 #include "turtleaudio/msg/stereo_audio_block.hpp"
 #include <time.h>
 #include "std_msgs/msg/header.hpp"
+#include "rclcpp/qos.hpp"
 
 #define CHANNELS 2       // Stéréo
 #define SAMPLE_RATE 48000
@@ -56,7 +57,14 @@ class AudioRecorder : public rclcpp::Node
     AudioRecorder()
     : Node("audio_recorder")
     {
-      publisher = this->create_publisher<StereoAudioBlock>("audio_data", 10);
+      rclcpp::QoS qos_audio_realtime(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
+      qos_audio_realtime
+        .reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT)
+        .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE)
+        .history(RMW_QOS_POLICY_HISTORY_KEEP_LAST)
+        .keep_last(1);
+
+      publisher = this->create_publisher<StereoAudioBlock>("audio_data", qos_audio_realtime);
       buffer.resize(BUFFER_SIZE * CHANNELS);
       auto seconds = static_cast<double>(BUFFER_SIZE) / SAMPLE_RATE;
       auto period = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(seconds));
@@ -75,8 +83,8 @@ class AudioRecorder : public rclcpp::Node
       msg.right.data.resize(BUFFER_SIZE);
       for (size_t i = 0; i < BUFFER_SIZE; ++i)
       {
-          msg.left.data[i] = static_cast<int>(3000 * sin(2 * M_PI * 440 * i / SAMPLE_RATE));
-          msg.right.data[i] = static_cast<int>(3000 * sin(2 * M_PI * 440 * i / SAMPLE_RATE));
+          msg.left.data[i] = static_cast<int>(3000 * sin((2 * M_PI * 440 * i) / SAMPLE_RATE));
+          msg.right.data[i] = static_cast<int>(3000 * sin((2 * M_PI * 440 * i) / SAMPLE_RATE));
       }
       msg.header.frame_id = std::to_string(frame_count);
       msg.header.stamp = this->now();
