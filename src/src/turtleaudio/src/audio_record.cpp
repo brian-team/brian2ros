@@ -10,7 +10,7 @@
 
 #define CHANNELS 2       // Stéréo
 #define SAMPLE_RATE 48000
-#define BUFFER_SIZE 256 
+#define BUFFER_SIZE 1024 
 
 #define MAX_FRAMES 500 // Nombre maximum de frames à lire
 using namespace std::chrono_literals;
@@ -62,8 +62,30 @@ class AudioRecorder : public rclcpp::Node
       auto period = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(seconds));
       timer = this->create_wall_timer(
        period, std::bind(&AudioRecorder::get_sample, this));
+      
+      publisher_sin = this->create_publisher<StereoAudioBlock>("audio_sin", 10);
+      timer_sin = this->create_wall_timer(
+       period, std::bind(&AudioRecorder::get_sample_sin, this));
     }
   private:
+    void get_sample_sin()
+    {
+      StereoAudioBlock msg;
+      msg.left.data.resize(BUFFER_SIZE);
+      msg.right.data.resize(BUFFER_SIZE);
+      for (size_t i = 0; i < BUFFER_SIZE; ++i)
+      {
+          msg.left.data[i] = static_cast<int>(10 * sin(2 * M_PI * 440 * i / SAMPLE_RATE));
+          msg.right.data[i] = static_cast<int>(10 * sin(2 * M_PI * 440 * i / SAMPLE_RATE));
+      }
+      msg.header.frame_id = std::to_string(frame_count);
+      msg.header.stamp = this->now();
+      frame_count_sin++;
+      publisher_sin->publish(msg);
+    }
+    rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher_sin;
+    rclcpp::TimerBase::SharedPtr timer_sin;
+    int frame_count_sin = 0;
     void get_sample() 
     {        
       static PaStream* stream = _init_input_stream();
@@ -81,8 +103,8 @@ class AudioRecorder : public rclcpp::Node
 
       for (size_t i = 0; i < BUFFER_SIZE; ++i)
       {
-          msg.left.data[i] = static_cast<float>(buffer[2 * i]);
-          msg.right.data[i] = static_cast<float>(buffer[2 * i + 1]);
+          msg.left.data[i] = static_cast<int>(buffer[2 * i]);
+          msg.right.data[i] = static_cast<int>(buffer[2 * i + 1]);
       }
       msg.header.frame_id = std::to_string(frame_count);
       msg.header.stamp = this->now();

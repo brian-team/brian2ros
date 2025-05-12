@@ -1,3 +1,3 @@
-std_msgs/Float32MultiArray left
-std_msgs/Float32MultiArray right
+std_msgs/Int16MultiArray left
+std_msgs/Int16MultiArray right
 std_msgs/Header header
