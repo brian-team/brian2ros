@@ -62,11 +62,17 @@ public:
 
 
     ROS() : Node("ros_brian")
-    {
+    {   
+        qos_realtime
+            .reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT)
+            .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE)
+            .history(RMW_QOS_POLICY_HISTORY_KEEP_LAST)
+            .keep_last(1);
+
         // Create all the publishers given by the user
         {% for publisher in publishers %}
         publisher_{{publisher["name"]}} = 
-            this->create_publisher<{{publisher["topic_type"]}}>("{{publisher["topic"]}}", 10);
+            this->create_publisher<{{publisher["topic_type"]}}>("{{publisher["topic"]}}", qos_realtime);
         timer_{{publisher["name"]}} = this->create_wall_timer(
             {{publisher["rate"]}}ms, std::bind(&ROS::{{publisher["name"]}}_pub_callback, this));
         {% endfor %}
@@ -76,7 +82,7 @@ public:
         {% for subscriber in subscribers %}
         subscription_{{subscriber["name"]}} = 
             this->create_subscription<{{subscriber["topic_type"]}}>(
-            "{{subscriber["topic"]}}", rclcpp::SensorDataQoS(), std::bind(&ROS::{{subscriber["name"]}}_sub_callback, this, _1));
+            "{{subscriber["topic"]}}", qos_realtime, std::bind(&ROS::{{subscriber["name"]}}_sub_callback, this, _1));
         {% endfor %}  
         //
 
