@@ -20,7 +20,7 @@ eq = Equations('''
 x = audio(t,i) : 1
 ''')
 
-group = NeuronGroup(2,eq,name="ears",method="euler",threshold="x>10",reset="")
+group = NeuronGroup(2,eq,name="ears",method="euler",threshold="x>10",reset="",dt=defaultclock.dt)
 
 state_x = StateMonitor(group, "x", record=True)
 
