@@ -65,32 +65,39 @@ class AudioRecorder : public rclcpp::Node
         .keep_last(1);
 
       publisher = this->create_publisher<StereoAudioBlock>("audio_data", qos_audio_realtime);
+
+      msg.left.data.resize(BUFFER_SIZE);
+      msg.right.data.resize(BUFFER_SIZE);
       buffer.resize(BUFFER_SIZE * CHANNELS);
+
       auto seconds = static_cast<double>(BUFFER_SIZE) / SAMPLE_RATE;
       auto period = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(seconds));
       timer = this->create_wall_timer(
        period, std::bind(&AudioRecorder::get_sample, this));
       
       publisher_sin = this->create_publisher<StereoAudioBlock>("audio_sin", qos_audio_realtime);
+
+      msg_sin.left.data.resize(BUFFER_SIZE);
+      msg_sin.right.data.resize(BUFFER_SIZE);
+
       timer_sin = this->create_wall_timer(
        period, std::bind(&AudioRecorder::get_sample_sin, this));
     }
   private:
     void get_sample_sin()
     {
-      StereoAudioBlock msg;
-      msg.left.data.resize(BUFFER_SIZE);
-      msg.right.data.resize(BUFFER_SIZE);
+     
       for (size_t i = 0; i < BUFFER_SIZE; ++i)
       {
-          msg.left.data[i] = static_cast<int>(3000 * sin((2 * M_PI * 440 * i) / SAMPLE_RATE));
-          msg.right.data[i] = static_cast<int>(3000 * sin((2 * M_PI * 440 * i) / SAMPLE_RATE));
+          msg_sin.left.data[i] = static_cast<int>(3000 * sin((2 * M_PI * 440 * i) / SAMPLE_RATE));
+          msg_sin.right.data[i] = static_cast<int>(3000 * sin((2 * M_PI * 440 * i) / SAMPLE_RATE));
       }
-      msg.header.frame_id = std::to_string(frame_count);
-      msg.header.stamp = this->now();
+      msg_sin.header.frame_id = std::to_string(frame_count);
+      msg_sin.header.stamp = this->now();
       frame_count_sin++;
-      publisher_sin->publish(msg);
+      publisher_sin->publish(msg_sin);
     }
+    StereoAudioBlock msg_sin;
     rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher_sin;
     rclcpp::TimerBase::SharedPtr timer_sin;
     int frame_count_sin = 0;
@@ -105,10 +112,8 @@ class AudioRecorder : public rclcpp::Node
           std::cerr << "Erreur de lecture : " << Pa_GetErrorText(err) << std::endl;
           return;
       }
-      
-      StereoAudioBlock msg;
-      msg.left.data.resize(BUFFER_SIZE);
-      msg.right.data.resize(BUFFER_SIZE);
+
+
       
       const int16_t* src = buffer.data();
       short int* dst_left = msg.left.data.data();
@@ -128,13 +133,15 @@ class AudioRecorder : public rclcpp::Node
       if (frame_count >= MAX_FRAMES)
       {
           RCLCPP_INFO(this->get_logger(), "Nombre maximum de frames atteint, arrêt du noeud.");
-          rclcpp::shutdown(); 
+          Pa_StopStream(stream);
+          Pa_CloseStream(stream);
           Pa_Terminate();
+          rclcpp::shutdown(); 
       }
       frame_count++;
     }
 
-
+    StereoAudioBlock msg;
     std::vector<int16_t> buffer;
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher;
