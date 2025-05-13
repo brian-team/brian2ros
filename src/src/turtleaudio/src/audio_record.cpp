@@ -94,6 +94,7 @@ class AudioRecorder : public rclcpp::Node
     rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher_sin;
     rclcpp::TimerBase::SharedPtr timer_sin;
     int frame_count_sin = 0;
+
     void get_sample() 
     {        
       static PaStream* stream = _init_input_stream();
@@ -104,16 +105,21 @@ class AudioRecorder : public rclcpp::Node
           std::cerr << "Erreur de lecture : " << Pa_GetErrorText(err) << std::endl;
           return;
       }
-
+      
       StereoAudioBlock msg;
       msg.left.data.resize(BUFFER_SIZE);
       msg.right.data.resize(BUFFER_SIZE);
+      
+      const int16_t* src = buffer.data();
+      short int* dst_left = msg.left.data.data();
+      short int* dst_right = msg.right.data.data();
 
       for (size_t i = 0; i < BUFFER_SIZE; ++i)
       {
-          msg.left.data[i] = static_cast<int>(buffer[2 * i]);
-          msg.right.data[i] = static_cast<int>(buffer[2 * i + 1]);
+          *dst_left++  = static_cast<int>(*src++); // canal gauche
+          *dst_right++ = static_cast<int>(*src++); // canal droit
       }
+
       msg.header.frame_id = std::to_string(frame_count);
       msg.header.stamp = this->now();
       publisher->publish(msg);
@@ -126,8 +132,9 @@ class AudioRecorder : public rclcpp::Node
           Pa_Terminate();
       }
       frame_count++;
-
     }
+
+
     std::vector<int16_t> buffer;
     rclcpp::TimerBase::SharedPtr timer;
     rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher;
