@@ -13,7 +13,7 @@
 #define SAMPLE_RATE 48000
 #define BUFFER_SIZE 1024 
 
-#define MAX_FRAMES 500 // Nombre maximum de frames à lire
+#define MAX_FRAMES 2000 // Nombre maximum de frames à lire
 using namespace std::chrono_literals;
 using turtleaudio::msg::StereoAudioBlock;
 
@@ -71,7 +71,7 @@ class AudioRecorder : public rclcpp::Node
       timer = this->create_wall_timer(
        period, std::bind(&AudioRecorder::get_sample, this));
       
-      publisher_sin = this->create_publisher<StereoAudioBlock>("audio_sin", 10);
+      publisher_sin = this->create_publisher<StereoAudioBlock>("audio_sin", qos_audio_realtime);
       timer_sin = this->create_wall_timer(
        period, std::bind(&AudioRecorder::get_sample_sin, this));
     }
@@ -116,7 +116,8 @@ class AudioRecorder : public rclcpp::Node
       }
       msg.header.frame_id = std::to_string(frame_count);
       msg.header.stamp = this->now();
-      frame_count++;
+      publisher->publish(msg);
+
       RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count);
       if (frame_count >= MAX_FRAMES)
       {
@@ -124,7 +125,8 @@ class AudioRecorder : public rclcpp::Node
           rclcpp::shutdown(); 
           Pa_Terminate();
       }
-      publisher->publish(msg);
+      frame_count++;
+
     }
     std::vector<int16_t> buffer;
     rclcpp::TimerBase::SharedPtr timer;
