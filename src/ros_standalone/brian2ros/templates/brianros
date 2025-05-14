@@ -25,6 +25,8 @@
 #include "std_msgs/msg/string.hpp"
 
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp/qos.hpp"
+
 {% for publisher in publishers%}
 #include "{{publisher["topic_include"]}}"
 {% endfor %}
@@ -63,11 +65,11 @@ public:
 
     ROS() : Node("ros_brian")
     {   
+        rclcpp::QoS qos_realtime(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
         qos_realtime
-            .reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT)
-            .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE)
-            .history(RMW_QOS_POLICY_HISTORY_KEEP_LAST)
-            .keep_last(1);
+            .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
+            .history(RMW_QOS_POLICY_HISTORY_KEEP_ALL)
+            .keep_last(5);
 
         // Create all the publishers given by the user
         {% for publisher in publishers %}
