@@ -8,10 +8,9 @@ class MinimalSubscriber(Node):
 
     def __init__(self):
         super().__init__('minimal_subscriber')
-        qos = rclpy.qos.QoSProfile(depth=1,
-                                   reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-                                   durability=rclpy.qos.DurabilityPolicy.VOLATILE,
-                                   history=rclpy.qos.HistoryPolicy.KEEP_LAST)
+        qos = rclpy.qos.QoSProfile(depth=5,
+                                   reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
+                                   history=rclpy.qos.HistoryPolicy.KEEP_ALL)
         self.subscription = self.create_subscription(
             StereoAudioBlock,
             'audio_data',
@@ -110,6 +109,7 @@ class MinimalSubscriber(Node):
         
         print(f"Nombre de frame perdu : {self.count_frame}")
         print(f"Nombre de diff tempo : {self.count_diff}")
+        
 def main(args=None):
     rclpy.init(args=args)
 

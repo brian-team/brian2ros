@@ -59,10 +59,9 @@ class AudioRecorder : public rclcpp::Node
     {
       rclcpp::QoS qos_audio_realtime(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
       qos_audio_realtime
-        .reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT)
-        .durability(RMW_QOS_POLICY_DURABILITY_VOLATILE)
-        .history(RMW_QOS_POLICY_HISTORY_KEEP_LAST)
-        .keep_last(1);
+        .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
+        .history(RMW_QOS_POLICY_HISTORY_KEEP_ALL)
+        .keep_last(5);
 
       publisher = this->create_publisher<StereoAudioBlock>("audio_data", qos_audio_realtime);
 
@@ -92,7 +91,7 @@ class AudioRecorder : public rclcpp::Node
           msg_sin.left.data[i] = static_cast<int>(3000 * sin((2 * M_PI * 440 * i) / SAMPLE_RATE));
           msg_sin.right.data[i] = static_cast<int>(3000 * sin((2 * M_PI * 440 * i) / SAMPLE_RATE));
       }
-      msg_sin.header.frame_id = std::to_string(frame_count);
+      msg_sin.header.frame_id = std::to_string(frame_count_sin);
       msg_sin.header.stamp = this->now();
       frame_count_sin++;
       publisher_sin->publish(msg_sin);
