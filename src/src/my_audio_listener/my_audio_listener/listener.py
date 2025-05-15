@@ -13,7 +13,7 @@ class MinimalSubscriber(Node):
                                    history=rclpy.qos.HistoryPolicy.KEEP_ALL)
         self.subscription = self.create_subscription(
             StereoAudioBlock,
-            'audio_data',
+            'audio_sin',
             self.listener_callback,
             qos)
         
@@ -109,7 +109,7 @@ class MinimalSubscriber(Node):
         
         print(f"Nombre de frame perdu : {self.count_frame}")
         print(f"Nombre de diff tempo : {self.count_diff}")
-        
+
 def main(args=None):
     rclpy.init(args=args)
 

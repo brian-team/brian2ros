@@ -219,26 +219,35 @@ class Subscriber(Function):
         code = (
             """double """
             + self.name
-            + """(double t,int var_index){
-                //std::cout << "t = " << t << "var_time = " <<  brian::"""
-            + self.var_time_name
-            + """[0] << std::endl;
-
-                while(t > brian::"""
-            + self.var_time_name
-            + """[0]+ 0.2){
-
-                    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                }
-                std::vector<double> result = {
-                """
-        )
-
+            + """(double t,int var_index){""")
+        
+        for i, (out_name, out_value) in enumerate(self.output.items()):
+        
+            code += """
+            static int tail_""" + out_name + """ = 0;
+            static int previous_frame_id_""" + out_name + """ = 0;
+            static double t_""" + out_name + """ = 0.0;
+            
+            tail_""" + out_name + """ = (static_cast<int>(t / brian::_array_defaultclock_dt[0])) % """ + str(len(out_value) * 3) + """;
+            //std::cout << "tail_""" + out_name + """ : " << tail_""" + out_name + """ << std::endl;
+            while(brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] < previous_frame_id_""" + out_name + """ || brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] == 0){ 
+                //std::cout << "Waiting for the message to be received..." << std::endl;
+                //std::cout << "Frame ID: " << brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] << std::endl;
+                //std::cout << "Previous Frame ID: " << previous_frame_id_""" + out_name + """ << std::endl;
+                std::this_thread::sleep_for(std::chrono::duration<double>(brian::_array_defaultclock_dt[0]));
+            }
+            previous_frame_id_""" + out_name + """ = brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """];
+            """
+        
+        code += """
+            std::vector<double> result = {
+            """
+        
         # Loop through the output values to verify the format.
         for i, (out_name, out_value) in enumerate(self.output.items()):
                 
             # Add the Brian name of the output to the function.
-            code += """brian::_array_""" + self.name + """_var_""" + out_name + """[static_cast<int>(brian::_array_""" + self.name + """_buffer_""" + out_name + """[0])]"""
+            code += """brian::_array_""" + self.name + """_var_""" + out_name + """[tail_""" + out_name + """]"""
             
             # Add a comma if it is not the last output.
             if i != len(self.output) - 1:
@@ -246,22 +255,8 @@ class Subscriber(Function):
 
         code += """
                 };
-                """
-        for i, (out_name, out_value) in enumerate(self.output.items()):
-            # Add the output's buffer to the function.
-            code += """
-                if (brian::_array_""" + self.name + """_buffer_""" + out_name + """[0] < """ + str(len(out_value)) + """ && var_index == """ + str(i) + """) {
-                    brian::_array_""" + self.name + """_buffer_""" + out_name + """[0]++;
-                    }
-                else {
-                    //std::cout << "Buffer is full for """ + out_name + """." << std::endl;
-                    }
-                    """
-
-        code += """
-
                 return result[var_index];  
-                }"""
+            }"""
 
         
         self.implementations.add_implementation(
@@ -709,7 +704,12 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
             group = Owner(name=arg.name)
 
             # Create a variable to store the time of the ROS topic.
-            var_time = ArrayVariable("time_" + arg.name, size=1, owner=group, device=get_device())
+            var_time = ArrayVariable(
+                "time_" + arg.name, 
+                size=1, 
+                owner=group, 
+                device=get_device()
+            )
 
             # # Create a variable to store the time of the ROS topic.
             self.add_array(var_time)
@@ -723,7 +723,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                         out_value = [out_value]
                     elif isinstance(out_value, list):
                         if all(i is None for i in out_value): 
-                            out_value = [None]
+                            out_value = [None]                        
                     # Check if the output value is empty.
                     elif out_value is None:
                         out_value = [None]
@@ -731,7 +731,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     # Create a temporary Brian variable to find the name for the function.
                     var_tmp = ArrayVariable(
                         "var_" + out_name,
-                        size=len(out_value),
+                        size=len(out_value) * 3,
                         owner=group,
                         device=get_device(),
                     )
@@ -739,20 +739,21 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     self.init_with_zeros(var_tmp, var_tmp.dtype)
 
                     # Create a Brian variable buffer to find the name for the function.
-                    var_buffer = ArrayVariable(
-                        "buffer_" + out_name,
-                        size=1,
+                    var_frame_id = ArrayVariable(
+                        "frame_id_" + out_name,
+                        size=len(out_value) * 3,
                         owner=group,
                         device=get_device(),
                     )
-                    self.add_array(var_buffer)
-                    self.init_with_zeros(var_buffer, var_buffer.dtype)
+                    self.add_array(var_frame_id)
+                    self.init_with_zeros(var_frame_id, var_frame_id.dtype)
                     arg.outs.append(
                         {
                             "name": out_name,
                             "index": [str(o) for o in out_value],
                             "var": self.get_array_name(var_tmp),
-                            "buffer_name": self.get_array_name(var_buffer),
+                            "buffer_size": len(out_value) * 3,
+                            "frame_id": self.get_array_name(var_frame_id),
                         }
                     )
             except Exception as e:
@@ -956,7 +957,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
 
                     json.dump(data_for_rqt, f)
                 xc = os.system(
-                    'cd ' + self.file_path + '/../../ && MAKEFLAGS="-j1 -l1" colcon build' 
+                    'cd ' + self.file_path + '/../../ && MAKEFLAGS="-j1 -l1" colcon build --executor sequential' 
                     + (' --packages-skip turtlebot3_gz brian_interface --packages-ignore turtlebot3_gz brian_interface' if not prefs.devices.ros_standalone.interface else '')
                 )
 

@@ -145,9 +145,12 @@ public:
                     }
               
                 {% else %}
+                    static int head_{{put["name"]}} = 0;
                     for(int i = 0; i < std::size(i_{{put["name"]}}); ++i){
-                        brian::{{put["var"]}}[i] = msg->{{put["name"]}}.data[i_{{put["name"]}}[i]];
-                        brian::{{put["buffer_name"]}}[0] = 0;
+                        brian::{{put["var"]}}[head_{{put["name"]}}] = msg->{{put["name"]}}.data[i_{{put["name"]}}[i]];
+                        brian::{{put["frame_id"]}}[head_{{put["name"]}}] = std::stoi(msg->header.frame_id);
+                        head_{{put["name"]}} = (head_{{put["name"]}} + 1) % {{put["buffer_size"]}};
+
                         
                     }
                 {% endif %}

@@ -12,7 +12,7 @@ audio = Subscriber(
     name="audio",
     topic="audio_data",
     topic_type="turtleaudio/msg/StereoAudioBlock",
-    output={"left": np.int64(np.linspace(0,1023,1024)), "right": np.int64(np.linspace(0,1023,1024))},
+    output={"left": np.int16(np.linspace(0,1023,1024)), "right": np.int16(np.linspace(0,1023,1024))},
     header="turtleaudio/msg/stereo_audio_block.hpp",
 )
 
