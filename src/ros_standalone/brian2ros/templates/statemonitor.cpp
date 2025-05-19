@@ -1,7 +1,6 @@
 {# USES_VARIABLES { t, _clock_t, _indices, N } #}
 {# WRITES_TO_READ_ONLY_VARIABLES { t, N } #}
 {% extends 'common_group.cpp' %}
-
 {% block maincode %}
     {{_dynamic_t}}.push_back({{_clock_t}});
 
@@ -46,10 +45,20 @@
         {% endfor %}
     }
     {% for varname, var in _recorded_variables | dictsort %}
-    auto message_{{varname}} = std_msgs::msg::Float64MultiArray();
-    message_{{varname}}.layout.dim.push_back(std_msgs::msg::MultiArrayDimension());
-    message_{{varname}}.layout.dim[0].size = _num_indices;
-    message_{{varname}}.data = _message_record_{{varname}};
+    using brian_project::msg::FloatStateMonitor;
+    FloatStateMonitor message_{{varname}};
+    message_{{varname}}.array.layout.dim.push_back(std_msgs::msg::MultiArrayDimension());
+    message_{{varname}}.array.layout.dim[0].size = _num_indices;
+    message_{{varname}}.array.data = _message_record_{{varname}};
+
+    static double start_time = std::chrono::duration<double>(
+    std::chrono::system_clock::now().time_since_epoch()).count();
+    double time_in_seconds = {{_clock_t}} + start_time;
+    int32_t seconds = static_cast<int32_t>(time_in_seconds);
+    uint32_t nanoseconds = static_cast<uint32_t>((time_in_seconds - seconds) * 1e9);
+
+    message_{{varname}}.header.stamp.sec = seconds;
+    message_{{varname}}.header.stamp.nanosec = nanoseconds;
     ros_obj->publisher_{{owner.name+"_"+varname}}->publish(message_{{varname}});
     {% endfor %}
     //================================//

@@ -227,10 +227,12 @@ class Subscriber(Function):
             static int tail_""" + out_name + """ = 0;
             static int previous_frame_id_""" + out_name + """ = 0;
             static double t_""" + out_name + """ = 0.0;
+
+            static auto t_""" + out_name + """_start = std::chrono::high_resolution_clock::now();
             
             tail_""" + out_name + """ = (static_cast<int>(t / brian::_array_defaultclock_dt[0])) % """ + str(len(out_value) * 3) + """;
             //std::cout << "tail_""" + out_name + """ : " << tail_""" + out_name + """ << std::endl;
-            while(brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] < previous_frame_id_""" + out_name + """ || brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] == 0){ 
+            while(brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] <= previous_frame_id_""" + out_name + """ ){ 
                 //std::cout << "Waiting for the message to be received..." << std::endl;
                 //std::cout << "Frame ID: " << brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] << std::endl;
                 //std::cout << "Previous Frame ID: " << previous_frame_id_""" + out_name + """ << std::endl;
@@ -272,7 +274,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
     def __init__(self):
         super().__init__()
 
-        self.headers += ['"brianros.h"', '"std_msgs/msg/float64.hpp"']
+        self.headers += ['"brianros.h"', '"std_msgs/msg/float64.hpp"', '"brian_project/msg/float_state_monitor.hpp"']
 
         # Initialize the ROSStandaloneDevice by extending the CPPStandaloneDevice from Brian2.
         self.templater = self.code_object_class().templater.derive("brian2ros")
@@ -829,7 +831,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     self.templater.env.globals["pub_monitors"].append(
                         {
                             "name": codeobj.owner.name + "_" + var,
-                            "type": "Float64MultiArray"
+                            "type": "FloatStateMonitor",
                         }
                     )
                 
@@ -956,6 +958,17 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     }
 
                     json.dump(data_for_rqt, f)
+
+                # Add the msg directory to the brian_project package
+                xmsg = os.system(
+                    'cd ' + self.file_path + '/../../ && mkdir -p src/brian_project/msg && cp -r ' + self.file_path + '/templates/msg/* src/brian_project/msg'
+                )
+                if xmsg != 0:
+                    error_message = (
+                        "Error in construction of msg directory (error " "code: %u)."
+                    ) % xmsg
+
+                    raise RuntimeError(error_message)
                 xc = os.system(
                     'cd ' + self.file_path + '/../../ && MAKEFLAGS="-j1 -l1" colcon build --executor sequential' 
                     + (' --packages-skip turtlebot3_gz brian_interface --packages-ignore turtlebot3_gz brian_interface' if not prefs.devices.ros_standalone.interface else '')

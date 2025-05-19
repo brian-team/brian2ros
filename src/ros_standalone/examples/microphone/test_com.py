@@ -25,6 +25,6 @@ group = NeuronGroup(2,eq,name="ears",method="euler",threshold="x>10",reset="",dt
 state_x = StateMonitor(group, "x", record=True)
 
 
-run(10000 * second, report="text", report_period=0.1 * second)
+run(100 * second, report="text", report_period=0.1 * second)
 
 

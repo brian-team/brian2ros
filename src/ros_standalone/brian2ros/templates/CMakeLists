@@ -17,6 +17,8 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(turtleaudio REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
 set(SRCS {{source_files}})
 # Include directories
@@ -28,10 +30,18 @@ include_directories(
 set(OPTIMISATIONS {{ compiler_flags }})
 add_compile_options(${OPTIMISATIONS})
 
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/FloatStateMonitor.msg"
+  DEPENDENCIES std_msgs
+)
+ament_export_dependencies(rosidl_default_runtime)
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+
 # Add executable for the main project
 add_executable(main ${SRCS})
 target_link_libraries(main
-'portaudio'
+  'portaudio'
+  ${cpp_typesupport_target}
 )
 ament_target_dependencies(main rclcpp std_msgs sensor_msgs turtleaudio)
 

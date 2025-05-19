@@ -22,6 +22,7 @@
 
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
+#include "brian_project/msg/float_state_monitor.hpp"
 #include "std_msgs/msg/string.hpp"
 
 #include "rclcpp/rclcpp.hpp"
@@ -47,7 +48,7 @@ public:
     bool brian_state = false;
     
     {% for pub_monitor in pub_monitors %}
-    rclcpp::Publisher<std_msgs::msg::{{pub_monitor["type"]}}>::SharedPtr publisher_{{pub_monitor["name"]}};
+    rclcpp::Publisher<brian_project::msg::{{pub_monitor["type"]}}>::SharedPtr publisher_{{pub_monitor["name"]}};
     {% endfor %}
 
     {% for publisher in publishers %}
@@ -91,7 +92,7 @@ public:
         // Create all the publisher for send the monitor data
         {% for pub_monitor in pub_monitors %}
             publisher_{{pub_monitor["name"]}} =
-                this->create_publisher<std_msgs::msg::{{pub_monitor["type"]}}>("{{pub_monitor["name"]}}", 10);
+                this->create_publisher<brian_project::msg::{{pub_monitor["type"]}}>("{{pub_monitor["name"]}}", 10);
         {% endfor %}    
         //
     }
