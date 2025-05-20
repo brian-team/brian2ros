@@ -129,6 +129,14 @@ prefs.register_preferences(
         Whether to use the Brian2ROS interface.
         """,
     ),
+    buffer_multiplier=BrianPreference(
+        default=10,
+        docs="""
+        The multiplier for the circular buffer size. 
+        circular_buffer_size = buffer_multiplier * buffer_size.
+        """,
+    ),
+
 )
 
 
@@ -228,17 +236,27 @@ class Subscriber(Function):
             static int previous_frame_id_""" + out_name + """ = 0;
             static double t_""" + out_name + """ = 0.0;
 
-            static auto t_""" + out_name + """_start = std::chrono::high_resolution_clock::now();
-            
-            tail_""" + out_name + """ = (static_cast<int>(t / brian::_array_defaultclock_dt[0])) % """ + str(len(out_value) * 3) + """;
+            static int nb_""" + out_name + """ = 0;
+            static auto t_""" + out_name + """_start = std::chrono::duration<double>(
+    std::chrono::system_clock::now().time_since_epoch()).count();
+
+            auto t_""" + out_name + """_now = std::chrono::duration<double>(
+    std::chrono::system_clock::now().time_since_epoch()).count();
+
+            //std::cout << "t_""" + out_name + """_now - t_""" + out_name + """_start : " << t_""" + out_name + """_now - t_""" + out_name + """_start << std::endl;
+
+            tail_""" + out_name + """ = (static_cast<int>(t / brian::_array_defaultclock_dt[0])) % """ + str(len(out_value) * prefs.devices.ros_standalone.buffer_multiplier) + """;
             //std::cout << "tail_""" + out_name + """ : " << tail_""" + out_name + """ << std::endl;
-            while(brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] <= previous_frame_id_""" + out_name + """ ){ 
+            while(brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] < previous_frame_id_""" + out_name + """ || brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] == 0){ 
                 //std::cout << "Waiting for the message to be received..." << std::endl;
                 //std::cout << "Frame ID: " << brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] << std::endl;
                 //std::cout << "Previous Frame ID: " << previous_frame_id_""" + out_name + """ << std::endl;
-                std::this_thread::sleep_for(std::chrono::duration<double>(brian::_array_defaultclock_dt[0]));
+                std::this_thread::sleep_for(std::chrono::duration<double>(brian::_array_defaultclock_dt[0] / """+ str(prefs.devices.ros_standalone.buffer_multiplier) + """));
             }
+            nb_""" + out_name + """ ++;
+            std::cout << "nb_""" + out_name + """ : " << nb_""" + out_name + """ << std::endl;
             previous_frame_id_""" + out_name + """ = brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """];
+            t_""" + out_name + """_start = t_""" + out_name + """_now;
             """
         
         code += """
@@ -733,7 +751,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     # Create a temporary Brian variable to find the name for the function.
                     var_tmp = ArrayVariable(
                         "var_" + out_name,
-                        size=len(out_value) * 3,
+                        size=len(out_value) * prefs.devices.ros_standalone.buffer_multiplier,
                         owner=group,
                         device=get_device(),
                     )
@@ -743,7 +761,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     # Create a Brian variable buffer to find the name for the function.
                     var_frame_id = ArrayVariable(
                         "frame_id_" + out_name,
-                        size=len(out_value) * 3,
+                        size=len(out_value) * prefs.devices.ros_standalone.buffer_multiplier,
                         owner=group,
                         device=get_device(),
                     )
@@ -754,7 +772,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                             "name": out_name,
                             "index": [str(o) for o in out_value],
                             "var": self.get_array_name(var_tmp),
-                            "buffer_size": len(out_value) * 3,
+                            "buffer_size": len(out_value) * prefs.devices.ros_standalone.buffer_multiplier,
                             "frame_id": self.get_array_name(var_frame_id),
                         }
                     )

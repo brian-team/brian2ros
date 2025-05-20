@@ -7,10 +7,10 @@ set_device("ros_standalone", directory="src/src/brian_project", debug=True)
 defaultclock.dt = (1 / 48_000) * second
 
 #prefs.devices.ros_standalone.interface = False
-
+#prefs.devices.ros_standalone.buffer_multiplier = 10
 audio = Subscriber(
     name="audio",
-    topic="audio_data",
+    topic="audio_sin",
     topic_type="turtleaudio/msg/StereoAudioBlock",
     output={"left": np.int16(np.linspace(0,1023,1024)), "right": np.int16(np.linspace(0,1023,1024))},
     header="turtleaudio/msg/stereo_audio_block.hpp",
