@@ -84,22 +84,31 @@ public:
   }
 
 private:
-  void get_sample_sin()
-  {
 
-    for (size_t i = 0; i < BUFFER_SIZE; ++i)
-    {
-      msg_sin.left.data[i] = static_cast<int>(3000 * sin((2 * M_PI * 440 * i) / SAMPLE_RATE));
-      msg_sin.right.data[i] = static_cast<int>(3000 * sin((2 * M_PI * 440 * i) / SAMPLE_RATE));
-    }
-    msg_sin.header.frame_id = std::to_string(frame_count_sin);
-    msg_sin.header.stamp = this->now();
-    frame_count_sin++;
-    publisher_sin->publish(msg_sin);
+void get_sample_sin()
+{
+  constexpr double frequency = 440.0; 
+  constexpr double amplitude = 300.0; 
+
+  for (size_t i = 0; i < BUFFER_SIZE; ++i)
+  {
+    double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
+    int16_t sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * t));
+
+    msg_sin.left.data[i] = sample;
+    msg_sin.right.data[i] = sample;
   }
+
+  msg_sin.header.frame_id = std::to_string(frame_count_sin);
+  msg_sin.header.stamp = this->now();
+  frame_count_sin++;
+
+  publisher_sin->publish(msg_sin);
+}
   StereoAudioBlock msg_sin;
   rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher_sin;
   rclcpp::TimerBase::SharedPtr timer_sin;
+  int64_t sample_index_sin = 0;  
   int frame_count_sin = 0;
 
   void get_sample()
@@ -119,8 +128,8 @@ private:
 
     for (size_t i = 0; i < BUFFER_SIZE; ++i)
     {
-      *dst_left++ = static_cast<int>(*src++);  // canal gauche
-      *dst_right++ = static_cast<int>(*src++); // canal droit
+      *dst_left++ = static_cast<int16_t>(*src++);  // canal gauche
+      *dst_right++ = static_cast<int16_t>(*src++); // canal droit
     }
 
     msg.header.frame_id = std::to_string(frame_count);
