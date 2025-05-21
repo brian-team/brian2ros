@@ -89,14 +89,17 @@ void get_sample_sin()
 {
   constexpr double frequency = 440.0; 
   constexpr double amplitude = 300.0; 
+  constexpr double phase_shift = M_PI / 2;
 
   for (size_t i = 0; i < BUFFER_SIZE; ++i)
   {
     double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
-    int16_t sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * t));
 
-    msg_sin.left.data[i] = sample;
-    msg_sin.right.data[i] = sample;
+    int16_t left_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * t));
+    int16_t right_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * t + phase_shift));
+
+    msg_sin.left.data[i] = left_sample;
+    msg_sin.right.data[i] = right_sample;
   }
 
   msg_sin.header.frame_id = std::to_string(frame_count_sin);

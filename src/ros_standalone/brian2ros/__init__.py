@@ -229,61 +229,27 @@ class Subscriber(Function):
             + self.name
             + """(double t,int var_index){""")
         
+        
         for i, (out_name, out_value) in enumerate(self.output.items()):
         
             code += """
+            if (var_index == """ + str(i) + """) {
             static int tail_""" + out_name + """ = 0;
             static int previous_frame_id_""" + out_name + """ = 0;
-            static double t_""" + out_name + """ = 0.0;
-            static int nb_""" + out_name + """ = 0;
 
-            tail_""" + out_name + """ = (static_cast<int>(t / brian::_array_defaultclock_dt[0])) % """ + str(len(out_value) * prefs.devices.ros_standalone.buffer_multiplier) + """;
+            tail_""" + out_name + """ = (static_cast<int>(std::round(t / brian::_array_defaultclock_dt[0]))) % """ + str(len(out_value) * prefs.devices.ros_standalone.buffer_multiplier) + """;
+            int nb_""" + out_name + """_while = 0;
             //std::cout << "tail_""" + out_name + """ : " << tail_""" + out_name + """ << std::endl;
             while(brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] < previous_frame_id_""" + out_name + """ || brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] == 0){ 
-                //std::cout << "Waiting for the message to be received..." << std::endl;
-                //std::cout << "Frame ID: " << brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] << std::endl;
-                //std::cout << "Previous Frame ID: " << previous_frame_id_""" + out_name + """ << std::endl;
-                std::this_thread::sleep_for(std::chrono::duration<double>(brian::_array_defaultclock_dt[0] / """+ str(prefs.devices.ros_standalone.buffer_multiplier) + """));
+                std::this_thread::sleep_for(std::chrono::duration<double>(brian::_array_defaultclock_dt[0]));
             }
 
-            static auto t_""" + out_name + """_start = std::chrono::duration<double>(
-    std::chrono::system_clock::now().time_since_epoch()).count();
-
-            static int start_""" + out_name + """_frame_id = brian::_array_""" + self.name + """_frame_id_""" + out_name + """[0];
-
-            std::cout << "start_""" + out_name + """_frame_id : " << start_""" + out_name + """_frame_id << std::endl;
-
-            auto t_""" + out_name + """_now = std::chrono::duration<double>(
-    std::chrono::system_clock::now().time_since_epoch()).count();
-
-            //std::cout << "t_""" + out_name + """_now - t_""" + out_name + """_start : " << t_""" + out_name + """_now - t_""" + out_name + """_start << std::endl;
-
-
-            nb_""" + out_name + """ ++;
-            std::cout << "nb_""" + out_name + """ : " << nb_""" + out_name + """ << std::endl;
             previous_frame_id_""" + out_name + """ = brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """];
-            t_""" + out_name + """_start = t_""" + out_name + """_now;
+            return brian::_array_""" + self.name + """_var_""" + out_name + """[tail_""" + out_name + """];
+            }
             """
-        
-        code += """
-            std::vector<double> result = {
-            """
-        
-        # Loop through the output values to verify the format.
-        for i, (out_name, out_value) in enumerate(self.output.items()):
-                
-            # Add the Brian name of the output to the function.
-            code += """brian::_array_""" + self.name + """_var_""" + out_name + """[tail_""" + out_name + """]"""
-            
-            # Add a comma if it is not the last output.
-            if i != len(self.output) - 1:
-                code += ","
 
-        code += """
-                };
-                return result[var_index];  
-            }"""
-
+        code += """}"""
         
         self.implementations.add_implementation(
             "cpp", code, compiler_kwds={"headers": ["<thread>", "<chrono>"]}

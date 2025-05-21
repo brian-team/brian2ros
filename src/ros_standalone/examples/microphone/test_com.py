@@ -7,7 +7,7 @@ set_device("ros_standalone", directory="src/src/brian_project", debug=True)
 defaultclock.dt = (1 / 48_000) * second
 
 #prefs.devices.ros_standalone.interface = False
-#prefs.devices.ros_standalone.buffer_multiplier = 10
+prefs.devices.ros_standalone.buffer_multiplier = 10
 audio = Subscriber(
     name="audio",
     topic="audio_sin",
@@ -17,7 +17,7 @@ audio = Subscriber(
 )
 
 eq = Equations('''
-x = audio(t,i) : 1
+x = audio(t,i) : 1 (constant over dt)
 ''')
 
 group = NeuronGroup(2,eq,name="ears",method="euler",threshold="x>10",reset="",dt=defaultclock.dt)
@@ -25,6 +25,6 @@ group = NeuronGroup(2,eq,name="ears",method="euler",threshold="x>10",reset="",dt
 state_x = StateMonitor(group, "x", record=True)
 
 
-run(100 * second, report="text", report_period=0.1 * second)
+run(10 * second, report="text", report_period=1 * second, profile=True)
 
 
