@@ -235,15 +235,7 @@ class Subscriber(Function):
             static int tail_""" + out_name + """ = 0;
             static int previous_frame_id_""" + out_name + """ = 0;
             static double t_""" + out_name + """ = 0.0;
-
             static int nb_""" + out_name + """ = 0;
-            static auto t_""" + out_name + """_start = std::chrono::duration<double>(
-    std::chrono::system_clock::now().time_since_epoch()).count();
-
-            auto t_""" + out_name + """_now = std::chrono::duration<double>(
-    std::chrono::system_clock::now().time_since_epoch()).count();
-
-            //std::cout << "t_""" + out_name + """_now - t_""" + out_name + """_start : " << t_""" + out_name + """_now - t_""" + out_name + """_start << std::endl;
 
             tail_""" + out_name + """ = (static_cast<int>(t / brian::_array_defaultclock_dt[0])) % """ + str(len(out_value) * prefs.devices.ros_standalone.buffer_multiplier) + """;
             //std::cout << "tail_""" + out_name + """ : " << tail_""" + out_name + """ << std::endl;
@@ -253,6 +245,20 @@ class Subscriber(Function):
                 //std::cout << "Previous Frame ID: " << previous_frame_id_""" + out_name + """ << std::endl;
                 std::this_thread::sleep_for(std::chrono::duration<double>(brian::_array_defaultclock_dt[0] / """+ str(prefs.devices.ros_standalone.buffer_multiplier) + """));
             }
+
+            static auto t_""" + out_name + """_start = std::chrono::duration<double>(
+    std::chrono::system_clock::now().time_since_epoch()).count();
+
+            static int start_""" + out_name + """_frame_id = brian::_array_""" + self.name + """_frame_id_""" + out_name + """[0];
+
+            std::cout << "start_""" + out_name + """_frame_id : " << start_""" + out_name + """_frame_id << std::endl;
+
+            auto t_""" + out_name + """_now = std::chrono::duration<double>(
+    std::chrono::system_clock::now().time_since_epoch()).count();
+
+            //std::cout << "t_""" + out_name + """_now - t_""" + out_name + """_start : " << t_""" + out_name + """_now - t_""" + out_name + """_start << std::endl;
+
+
             nb_""" + out_name + """ ++;
             std::cout << "nb_""" + out_name + """ : " << nb_""" + out_name + """ << std::endl;
             previous_frame_id_""" + out_name + """ = brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """];
