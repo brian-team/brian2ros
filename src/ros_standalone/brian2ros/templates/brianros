@@ -48,7 +48,12 @@ public:
     bool brian_state = false;
     
     {% for pub_monitor in pub_monitors %}
-    rclcpp::Publisher<brian_project::msg::{{pub_monitor["type"]}}>::SharedPtr publisher_{{pub_monitor["name"]}};
+    {% if pub_monitor["type"] == "FloatStateMonitor" %}
+    rclcpp::Publisher<brian_project::msg::FloatStateMonitor>::SharedPtr publisher_{{pub_monitor["name"]}};
+    {% endif %}
+    {% if pub_monitor["type"] == "Float64" %}
+    rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr publisher_{{pub_monitor["name"]}};
+    {% endif %}
     {% endfor %}
 
     {% for publisher in publishers %}
@@ -91,8 +96,14 @@ public:
 
         // Create all the publisher for send the monitor data
         {% for pub_monitor in pub_monitors %}
-            publisher_{{pub_monitor["name"]}} =
-                this->create_publisher<brian_project::msg::{{pub_monitor["type"]}}>("{{pub_monitor["name"]}}", 10);
+        {% if pub_monitor["type"] == "FloatStateMonitor" %}
+        publisher_{{pub_monitor["name"]}} =
+                this->create_publisher<brian_project::msg::FloatStateMonitor>("{{pub_monitor["name"]}}", 10);
+        {% endif %}
+        {% if pub_monitor["type"] == "Float64" %}
+        publisher_{{pub_monitor["name"]}} =
+                this->create_publisher<std_msgs::msg::Float64>("{{pub_monitor["name"]}}", 10);
+        {% endif %}
         {% endfor %}    
         //
     }

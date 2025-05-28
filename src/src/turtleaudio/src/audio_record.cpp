@@ -13,7 +13,7 @@
 #define SAMPLE_RATE 48000
 #define BUFFER_SIZE 1024
 
-#define MAX_FRAMES 2000 // Nombre maximum de frames à lire
+#define MAX_FRAMES 20000 // Nombre maximum de frames à lire
 using namespace std::chrono_literals;
 using turtleaudio::msg::StereoAudioBlock;
 
@@ -63,16 +63,16 @@ public:
         .history(RMW_QOS_POLICY_HISTORY_KEEP_ALL)
         .keep_last(5);
 
-    publisher = this->create_publisher<StereoAudioBlock>("audio_data", qos_audio_realtime);
+    //publisher = this->create_publisher<StereoAudioBlock>("audio_data", qos_audio_realtime);
 
-    msg.left.data.resize(BUFFER_SIZE);
-    msg.right.data.resize(BUFFER_SIZE);
+    //msg.left.data.resize(BUFFER_SIZE);
+    //msg.right.data.resize(BUFFER_SIZE);
     buffer.resize(BUFFER_SIZE * CHANNELS);
 
     auto seconds = static_cast<double>(BUFFER_SIZE) / SAMPLE_RATE;
     auto period = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(seconds));
-    timer = this->create_wall_timer(
-        period, std::bind(&AudioRecorder::get_sample, this));
+    //timer = this->create_wall_timer(
+      //  period, std::bind(&AudioRecorder::get_sample, this));
 
     publisher_sin = this->create_publisher<StereoAudioBlock>("audio_sin", qos_audio_realtime);
 
@@ -89,22 +89,34 @@ void get_sample_sin()
 {
   constexpr double frequency = 440.0; 
   constexpr double amplitude = 300.0; 
-  constexpr double phase_shift = M_PI / 2;
+  constexpr double sound_speed = 343.0;
+  constexpr double distance = 0.2; // Distance entre les deux microphones
+  constexpr double max_delay = distance / sound_speed;
 
   for (size_t i = 0; i < BUFFER_SIZE; ++i)
   {
     double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
 
-    int16_t left_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * t));
-    int16_t right_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * t + phase_shift));
+    double left_delay = -0.5 * max_delay * sin(phase_shift); 
+    double right_delay = 0.5 * max_delay * sin(phase_shift);
+
+    int16_t left_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * (t - left_delay)));
+    int16_t right_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * (t - right_delay)));
 
     msg_sin.left.data[i] = left_sample;
     msg_sin.right.data[i] = right_sample;
   }
-
+  RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count_sin);
+  if (frame_count_sin >= MAX_FRAMES)
+  {
+    RCLCPP_INFO(this->get_logger(), "Nombre maximum de frames atteint, arrêt du noeud.");
+    rclcpp::shutdown();
+  }
   msg_sin.header.frame_id = std::to_string(frame_count_sin);
   msg_sin.header.stamp = this->now();
   frame_count_sin++;
+
+  phase_shift += M_PI / 250;
 
   publisher_sin->publish(msg_sin);
 }
@@ -113,6 +125,9 @@ void get_sample_sin()
   rclcpp::TimerBase::SharedPtr timer_sin;
   int64_t sample_index_sin = 0;  
   int frame_count_sin = 0;
+  double phase_shift = 0;
+
+
 
   void get_sample()
   {
