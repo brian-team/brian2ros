@@ -7,11 +7,14 @@ import signal
 import time
 import os
 import json
+from pathlib import Path
+import shutil
 
 # Import the necessary ROS libraries and files
 from rqt_plot.rosplot import ROSData
 from qt_gui.plugin import Plugin
 from .gui import Ui_Form
+from .gui_show_result import Ui_Form as Ui_Form_Result
 from rosgraph_msgs.msg import Clock
 
 # Import the necessary PyQt5 libraries
@@ -20,6 +23,7 @@ from PyQt5.QtCore import pyqtSignal, QTimer, QRect, QCoreApplication, QSize, Qt
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication, QWidget
 
+RESULT_FOLDER = os.path.dirname(os.path.realpath(__file__)).split("/src")[0] + "/src/src/brian_project/results"
 
 class MyPlugin(Plugin):
     progress_sim = pyqtSignal(int)
@@ -40,7 +44,7 @@ class MyPlugin(Plugin):
         self.start_time = time.time()
         self.start_user = False
         self.sub_main = None
-
+        self.ui_results = None
         # Load the JSON file
         path = os.environ["BRIAN_JSON"]
         with open(path) as f:
@@ -54,6 +58,7 @@ class MyPlugin(Plugin):
         # Create the widget and initialize the UI
         self._widget = QWidget()
         self.ui = Ui_Form(self.context.node)
+        self.ui_results = Ui_Form_Result(self.context.node)
         self.ui.setupUi(self._widget)
 
         # Connect signals to slots
@@ -62,6 +67,9 @@ class MyPlugin(Plugin):
         self.ui.restart.clicked.connect(self.restart_gazebo)
         self.ui.restart_brian.clicked.connect(self.restart_brian)
         self.ui.loop_button.stateChanged.connect(self.on_loop_button_state_changed)
+        self.ui.show_results.clicked.connect(self.show_results)
+
+        self.ui_results.showButton.clicked.connect(self.show)
 
         self.time.connect(self.ui.textBrowser_2.setText)
         self.progress_sim.connect(self.ui.progressBar.setValue)
@@ -216,8 +224,76 @@ class MyPlugin(Plugin):
         else:
             self.wait_time = self.t
 
+    # Function to empty the results folder 
+    def empty_file(self, file_path):
+        file = Path(file_path)
+        for element in file.iterdir():
+            if element.is_file() or element.is_symlink():
+                element.unlink()
+            elif element.is_dir():
+                shutil.rmtree(element)
+
+    # Check if the folder is empty
+    def is_file_empty(self, file_path):
+        return not any(Path(file_path).iterdir())
+
+    def show_results(self):
+        if not self.is_file_empty(RESULT_FOLDER):
+            print("\033[34m Opening results folder ... \033[0m")
+            self.ui_results.show()
+
+        else:
+            print("\033[31m ❌ Results folder is empty, please start a new simulation or wait for the end of the current one \033[0m")
+    def show(self):
+        res = self.ui_results.comboBox.currentText()
+        indice = self.ui_results.textInput.text()
+        
+        try:
+            indice = int(indice)
+        except ValueError:
+            print("\033[31m ❌ Invalid index, please enter a valid integer \033[0m")
+            return
+        
+        file_y = "_dynamic_array_" + (res + "_i" if res.split("_")[0] == "spikemonitor" else res)
+        file_x = "_dynamic_array_" + res.split("_")[0] + "_t"
+
+        name_x = self.find_file_name(file_x)
+        name_y = self.find_file_name(file_y)
+
+        x = self.get_value(name_x, resh=False)
+        y = self.get_value(name_y)[indice]
+
+        self.plot_array_2d(x,y)
+
+    def find_file_name(self, file_name):
+        folder = Path(RESULT_FOLDER)
+        files_name = [f.name for f in folder.iterdir() if f.is_file()]
+        for name in files_name:
+            if file_name.split("_") == name.split("_")[:-1]:
+                return os.path.join(folder, name)
+            
+    def get_value(self, fname, resh=True):
+        with open(fname, "rb") as f:
+            data = np.fromfile(f)
+        if resh:
+            data = data.reshape(2, -1)
+        return data
+
+    def plot_array_2d(self, x, y):
+        self.ui_results.plot.ax.clear()
+        self.ui_results.plot.ax.plot(x, y, marker='o', linestyle='-', color='b')
+        self.ui_results.plot.ax.set_title("Simulation Results")
+        self.ui_results.plot.ax.set_xlabel("Time")
+        self.ui_results.plot.ax.set_ylabel("Value")
+        self.ui_results.plot.figure.tight_layout()
+        self.ui_results.plot.draw()
+
+
     def start_main(self):
         
+        if not self.is_file_empty(RESULT_FOLDER):
+            self.empty_file(RESULT_FOLDER)
+
         modifier = ""
         for row,var in enumerate(self.variable_info):
             if self.ui.tableWidget.item(row, 1).text() != "":
@@ -242,7 +318,6 @@ class MyPlugin(Plugin):
                 shell=False,
                 env=os.environ,
             )
-        time.sleep(1)
 
     def stop_main(self):
         if self.sub_main:

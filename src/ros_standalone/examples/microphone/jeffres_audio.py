@@ -59,5 +59,6 @@ synapses.delay['i==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
 
 spikes = SpikeMonitor(neurons)
 son = StateMonitor(ears, 'x', record=True)
+spikes_thresh = StateMonitor(ears, 'thresh', record=True)
 
-run(1000 * second, report="text", report_period=1 * second, profile=True)
+run(10 * second, report="text", report_period=1 * second)

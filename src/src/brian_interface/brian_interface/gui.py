@@ -10,14 +10,14 @@
 
 from PyQt5.QtCore import QCoreApplication, QMetaObject, QRect, Qt
 from PyQt5.QtGui import QPalette, QColor, QFont, QBrush, QCursor
-from PyQt5.QtWidgets import QFrame, QProgressBar, QCheckBox, QLabel, QTextBrowser, QTabWidget, QPushButton, QComboBox, QTableWidgetItem, QTableWidget
+from PyQt5.QtWidgets import QFrame, QProgressBar, QCheckBox, QLabel, QTextBrowser, QTabWidget, QPushButton, QComboBox, QTableWidgetItem, QTableWidget, QMainWindow
 from rqt_plot import plot_widget
 from rqt_plot import data_plot
 import json
 import os
 
 
-class Ui_Form(object):
+class Ui_Form(QMainWindow):
     def __init__(self, node):
         super(Ui_Form, self).__init__()
         path = os.environ["BRIAN_JSON"]
@@ -31,7 +31,7 @@ class Ui_Form(object):
     def setupUi(self, Form):
         if not Form.objectName():
             Form.setObjectName("Form")
-        Form.resize(1280, 720)
+        Form.resize(1280, 1080)
         self.frame = QFrame(Form)
         self.frame.setObjectName("frame")
         self.frame.setGeometry(QRect(1000, 10, 251, 691))
@@ -265,6 +265,15 @@ class Ui_Form(object):
 
         self.restart_brian.hide()
 
+        # ===========================#
+        # Create Show Results Button #
+        # ===========================#
+
+        self.show_results = QPushButton(self.frame)
+        self.show_results.setObjectName("show_results")
+        self.show_results.setGeometry(QRect(40, 410, 171, 31))
+
+        
         # ===================#
         # Create Tab Widget #
         # ===================#
@@ -443,6 +452,9 @@ class Ui_Form(object):
         self.restart.setText(QCoreApplication.translate("Form", "Restart", None))
         self.restart_brian.setText(
             QCoreApplication.translate("Form", "Restart Brian", None)
+        )
+        self.show_results.setText(
+            QCoreApplication.translate("Form", "Show Results", None)
         )
 
     # retranslateUi

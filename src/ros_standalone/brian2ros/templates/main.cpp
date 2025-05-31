@@ -56,6 +56,7 @@
     
     void brian_running(const std::vector<std::string> args){
         std::cout << "Starting brian_running" << std::endl;
+        auto t_start = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
         {{'\n'.join(code_lines['before_start'])|autoindent}}
         brian_start();
         {{'\n'.join(code_lines['after_start'])|autoindent}}
@@ -69,6 +70,8 @@
         {{'\n'.join(code_lines['before_end'])|autoindent}}
         brian_end();
         {{'\n'.join(code_lines['after_end'])|autoindent}}
+        auto t_end = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
+        std::cout << "Brian simulation finished in " << (t_end - t_start) << " seconds." << std::endl;
         ros_obj->brian_state = false;
         //sleep(1);
         node_executors->remove_node(ros_obj);
