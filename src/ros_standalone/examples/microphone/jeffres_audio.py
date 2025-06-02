@@ -61,4 +61,5 @@ spikes = SpikeMonitor(neurons)
 son = StateMonitor(ears, 'x', record=True)
 spikes_thresh = StateMonitor(ears, 'thresh', record=True)
 
+get_device().display_monitors([spikes, son, spikes_thresh])
 run(10 * second, report="text", report_period=1 * second)

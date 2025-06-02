@@ -69,7 +69,7 @@ class MyPlugin(Plugin):
         self.ui.loop_button.stateChanged.connect(self.on_loop_button_state_changed)
         self.ui.show_results.clicked.connect(self.show_results)
 
-        self.ui_results.showButton.clicked.connect(self.show)
+        self.ui_results.showButton.clicked.connect(self.display)
 
         self.time.connect(self.ui.textBrowser_2.setText)
         self.progress_sim.connect(self.ui.progressBar.setValue)
@@ -240,12 +240,17 @@ class MyPlugin(Plugin):
     def show_results(self):
         if not self.is_file_empty(RESULT_FOLDER):
             print("\033[34m Opening results folder ... \033[0m")
+            self.monitors = self.find_file_name()
+            self.ui_results.comboBox.clear()
+            self.ui_results.comboBox.addItems(
+                [name for name in self.monitors.keys()]
+            )
             self.ui_results.show()
-
         else:
             print("\033[31m ❌ Results folder is empty, please start a new simulation or wait for the end of the current one \033[0m")
-    def show(self):
-        res = self.ui_results.comboBox.currentText()
+
+    def display(self):
+        display_choice = self.ui_results.comboBox.currentText()
         indice = self.ui_results.textInput.text()
         
         try:
@@ -254,23 +259,42 @@ class MyPlugin(Plugin):
             print("\033[31m ❌ Invalid index, please enter a valid integer \033[0m")
             return
         
-        file_y = "_dynamic_array_" + (res + "_i" if res.split("_")[0] == "spikemonitor" else res)
-        file_x = "_dynamic_array_" + res.split("_")[0] + "_t"
-
-        name_x = self.find_file_name(file_x)
-        name_y = self.find_file_name(file_y)
+        name_x = self.monitors[display_choice]["x"]
+        name_y = self.monitors[display_choice]["y"]
 
         x = self.get_value(name_x, resh=False)
         y = self.get_value(name_y)[indice]
 
         self.plot_array_2d(x,y)
 
-    def find_file_name(self, file_name):
+    def find_file_name(self):
+        # Find all files in the results folder that match with any monitor type
+
         folder = Path(RESULT_FOLDER)
         files_name = [f.name for f in folder.iterdir() if f.is_file()]
+
+        looking_for = ["statemonitor", "spikemonitor", "ratemonitor"]
+
+        unmatch_x = []
+        unmatch_y = []
+
+        res = {}
         for name in files_name:
-            if file_name.split("_") == name.split("_")[:-1]:
-                return os.path.join(folder, name)
+            for look in looking_for:
+
+                if look in name.split("_") and "t" in name.split("_") and "dynamic" in name.split("_"):
+                    unmatch_x.append([name, os.path.join(folder, name)])
+
+                if look in name.split("_") and "t" not in name.split("_") and "dynamic" in name.split("_"):
+                    unmatch_y.append([name, os.path.join(folder, name)])
+
+        for x in unmatch_x:
+            for y in unmatch_y:
+
+                if x[0].split("_dynamic_array_")[-1].split("_")[:-2] == y[0].split("_dynamic_array_")[-1].split("_")[:-2]:
+                    res["_".join(y[0].split("_")[:-1])] = {"x": x[1], "y": y[1]}
+
+        return res
             
     def get_value(self, fname, resh=True):
         with open(fname, "rb") as f:
@@ -281,7 +305,7 @@ class MyPlugin(Plugin):
 
     def plot_array_2d(self, x, y):
         self.ui_results.plot.ax.clear()
-        self.ui_results.plot.ax.plot(x, y, marker='o', linestyle='-', color='b')
+        self.ui_results.plot.ax.plot(x, y, marker='.', linestyle='-', color='b')
         self.ui_results.plot.ax.set_title("Simulation Results")
         self.ui_results.plot.ax.set_xlabel("Time")
         self.ui_results.plot.ax.set_ylabel("Value")

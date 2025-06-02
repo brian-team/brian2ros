@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QFrame, QLabel, QPushButton, QComboBox, QWidget
+from PyQt5.QtWidgets import QFrame, QLabel, QPushButton, QComboBox, QWidget, QVBoxLayout
 from PyQt5.QtGui import QPalette, QColor, QFont
 from PyQt5.QtCore import QMetaObject, QRect
 from matplotlib.figure import Figure
-import json
-import os
 
 class MatplotlibCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
@@ -18,13 +17,8 @@ class MatplotlibCanvas(FigureCanvas):
 class Ui_Form(QWidget):
     def __init__(self,node):
         super(Ui_Form, self).__init__()
-        path = os.environ["BRIAN_JSON"]
         self.node = node
-        with open(path) as f:
-            data = json.load(f)
-            self.duration = data["duration"]
-            self.monitors = data["pub_monitors"]
-            self.variable_info = data["variable_info"]
+
         self.setupUi(self)
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -43,6 +37,12 @@ class Ui_Form(QWidget):
         self.plot = MatplotlibCanvas(parent=self.main_layout, width=5, height=4)
         self.plot.setGeometry(QRect(10, 10, 500, 460))
         self.plot.setObjectName("plot")
+        self.toolbar_container = QWidget(self.main_layout)
+        self.toolbar_container.setGeometry(QRect(10, 0, 500, 30))  # Position sous le plot
+        self.toolbar_layout = QVBoxLayout(self.toolbar_container)
+        self.toolbar_layout.setContentsMargins(0, 0, 0, 0)
+        self.toolbar = NavigationToolbar(self.plot, self)
+        self.toolbar_layout.addWidget(self.toolbar)
 
         self.right_panel = QFrame(self.main_layout)
         self.right_panel.setGeometry(QRect(520, 10, 250, 460))
@@ -53,7 +53,6 @@ class Ui_Form(QWidget):
         self.comboBox.setGeometry(QRect(20, 30, 210, 30))
         self.comboBox.setObjectName("comboBox")
         self.comboBox.setFont(QFont("Arial", 10))
-        self.comboBox.addItems([monit["name"] for monit in self.monitors])  
 
         self.label_input = QLabel(self.right_panel)
         self.label_input.setGeometry(QRect(20, 80, 210, 20))

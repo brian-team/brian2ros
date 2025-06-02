@@ -794,48 +794,56 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
 
         pck_file = self.templater.package(None, None)
         writer.write("package.xml", pck_file)
-        
-    def detect(self):
-        subset = set()
+    
+    def display_monitors(self, monitors):
 
         spike_monitors_nb = 0
         state_monitors_nb = 0
         population_rate_monitors_nb = 0
 
-        for codeobj in self.code_objects.values():
-              # Add the SpikeMonitor to pub_monitors
-            if isinstance(codeobj.owner, SpikeMonitor):
+        for monitor in monitors:
+            print("Monitor detected : ", monitor.name, " of type ", type(monitor))
+            if isinstance(monitor, SpikeMonitor):
                 spike_monitors_nb += 1
                 self.templater.env.globals["pub_monitors"].append(
                     {
-                        "name": codeobj.owner.name, 
-                        "type": "Float64"
+                        "name": monitor.name, 
+                        "type": "Float64",
                     }
                 )
-                
-
-            # Add the StateMonitor to pub_monitors
-            if isinstance(codeobj.owner, StateMonitor):
+            elif isinstance(monitor, StateMonitor):
                 state_monitors_nb += 1
-                for var in codeobj.owner.recorded_variables:
+                for var in monitor.recorded_variables:
                     self.templater.env.globals["pub_monitors"].append(
                         {
-                            "name": codeobj.owner.name + "_" + var,
+                            "name": monitor.name + "_" + var,
                             "type": "FloatStateMonitor",
                         }
                     )
-                
-
-            # Add the PopulationRateMonitor to pub_monitors
-            if isinstance(codeobj.owner, PopulationRateMonitor):
+            elif isinstance(monitor, PopulationRateMonitor):
                 population_rate_monitors_nb += 1
                 self.templater.env.globals["pub_monitors"].append(
                     {
-                        "name": codeobj.owner.name, 
-                        "type": "Float64"
+                        "name": monitor.name, 
+                        "type": "Float64",
                     }
                 )
+            else:
+                raise RuntimeError(
+                    f"Unknown monitor type: {type(monitor)}"
+                )
+        print(f"\033[35m➤ Spikemonitor detected : {spike_monitors_nb}\033[0m")
+        print(f"\033[35m➤ Statemonitor detected : {state_monitors_nb}\033[0m")
+        print(f"\033[35m➤ PopulationRateMonitor detected : {population_rate_monitors_nb}\033[0m")
 
+    def detect(self):
+
+        subset = set()
+        for codeobj in self.code_objects.values():
+
+            #---------------------------------#
+            #! Part of the variable modifier !#
+            #---------------------------------#
             # Add the NeuronGroup variable to the modifier
             if isinstance(codeobj.owner, NeuronGroup):
                 # We only take variable from stateupdater
@@ -850,14 +858,14 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                                     "dimension": str(var.dim)
                                 }
                             )
-                            
+            #-----------------------------------#
+            #! Part of the Subscriber creation !#
+            #-----------------------------------#  
             for var_name, var in codeobj.variables.items():
                 if isinstance(var, Subscriber): 
                     subset.add(var)
         self.add_subscriber(*subset)
-        print(f"\033[35m➤ Spikemonitor detected : {spike_monitors_nb}\033[0m")
-        print(f"\033[35m➤ Statemonitor detected : {state_monitors_nb}\033[0m")
-        print(f"\033[35m➤ PopulationRateMonitor detected : {population_rate_monitors_nb}\033[0m")
+
      
     def generate_objects_source(
         self,
