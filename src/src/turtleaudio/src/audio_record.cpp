@@ -63,16 +63,16 @@ public:
         .history(RMW_QOS_POLICY_HISTORY_KEEP_ALL)
         .keep_last(5);
 
-    //publisher = this->create_publisher<StereoAudioBlock>("audio_data", qos_audio_realtime);
+    publisher = this->create_publisher<StereoAudioBlock>("audio_data", qos_audio_realtime);
 
-    //msg.left.data.resize(BUFFER_SIZE);
-    //msg.right.data.resize(BUFFER_SIZE);
+    msg.left.data.resize(BUFFER_SIZE);
+    msg.right.data.resize(BUFFER_SIZE);
     buffer.resize(BUFFER_SIZE * CHANNELS);
 
     auto seconds = static_cast<double>(BUFFER_SIZE) / SAMPLE_RATE;
     auto period = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(seconds));
-    //timer = this->create_wall_timer(
-      //  period, std::bind(&AudioRecorder::get_sample, this));
+    timer = this->create_wall_timer(
+        period, std::bind(&AudioRecorder::get_sample, this));
 
     publisher_sin = this->create_publisher<StereoAudioBlock>("audio_sin", qos_audio_realtime);
 
