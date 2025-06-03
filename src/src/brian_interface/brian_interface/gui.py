@@ -244,7 +244,7 @@ class Ui_Form(QMainWindow):
         self.restart.hide()
 
         # =============================#
-        # Create Restart Brian Button #
+        # Create Restart Brian Button  #
         # =============================#
 
         # Create Restart Brian Button
@@ -273,7 +273,14 @@ class Ui_Form(QMainWindow):
         self.show_results.setObjectName("show_results")
         self.show_results.setGeometry(QRect(40, 410, 171, 31))
 
-        
+        # ===========================#
+        # Create Stop Brian Button
+        # ===========================#
+
+        self.stop_brian = QPushButton(self.frame)
+        self.stop_brian.setObjectName("stop_brian")
+        self.stop_brian.setGeometry(QRect(40, 580, 171, 31))
+
         # ===================#
         # Create Tab Widget #
         # ===================#
@@ -414,6 +421,7 @@ class Ui_Form(QMainWindow):
         Form.setWindowTitle(QCoreApplication.translate("Form", "Form", None))
         self.Start_Button.setText(QCoreApplication.translate("Form", "Start", None))
         self.End_Button.setText(QCoreApplication.translate("Form", "End", None))
+        self.stop_brian.setText(QCoreApplication.translate("Form", "Stop Brian", None))
         folder = os.path.dirname(os.path.realpath(__file__)).split("/src")[0] + "/src/src/turtlebot3_gz/launch"
 
         file = []

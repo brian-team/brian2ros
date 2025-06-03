@@ -16,6 +16,7 @@ from qt_gui.plugin import Plugin
 from .gui import Ui_Form
 from .gui_show_result import Ui_Form as Ui_Form_Result
 from rosgraph_msgs.msg import Clock
+from std_msgs.msg import String
 
 # Import the necessary PyQt5 libraries
 import pyqtgraph as pg
@@ -68,6 +69,7 @@ class MyPlugin(Plugin):
         self.ui.restart_brian.clicked.connect(self.restart_brian)
         self.ui.loop_button.stateChanged.connect(self.on_loop_button_state_changed)
         self.ui.show_results.clicked.connect(self.show_results)
+        self.ui.stop_brian.clicked.connect(self.publish_stop_brian)
 
         self.ui_results.showButton.clicked.connect(self.display)
 
@@ -83,6 +85,7 @@ class MyPlugin(Plugin):
 
         # Initialize ROS node without rclpy.init()
         self.node = context.node
+
 
         # Create the different plot widgets
         self.plot_widgets = {}
@@ -139,6 +142,22 @@ class MyPlugin(Plugin):
         self.timer = QTimer()
         self.timer.setInterval(20)
         self.timer.timeout.connect(self.update_plot_data)
+
+        self.publisher_control = self.node.create_publisher(String, "brian_control", 10)
+
+    def publish_stop_brian(self):
+        # Publish a message to stop the simulation
+        msg = String()
+        msg.data = "stop"
+        self.publisher_control.publish(msg)
+        print("\033[34m Stopping the simulation ... \033[0m")
+
+    def publish_shutdown_brian(self):
+        # Publish a message to shutdown the simulation
+        msg = String()
+        msg.data = "shutdown"
+        self.publisher_control.publish(msg)
+        print("\033[34m Shutting down the simulation ... \033[0m")
 
     def on_loop_button_state_changed(self, state):
         # Check if the loop button is checked
@@ -240,10 +259,10 @@ class MyPlugin(Plugin):
     def show_results(self):
         if not self.is_file_empty(RESULT_FOLDER):
             print("\033[34m Opening results folder ... \033[0m")
-            self.monitors = self.find_file_name()
+            self.monitors_name = self.find_file_name()
             self.ui_results.comboBox.clear()
             self.ui_results.comboBox.addItems(
-                [name for name in self.monitors.keys()]
+                [name for name in self.monitors_name.keys()]
             )
             self.ui_results.show()
         else:
@@ -259,8 +278,8 @@ class MyPlugin(Plugin):
             print("\033[31m ❌ Invalid index, please enter a valid integer \033[0m")
             return
         
-        name_x = self.monitors[display_choice]["x"]
-        name_y = self.monitors[display_choice]["y"]
+        name_x = self.monitors_name[display_choice]["x"]
+        name_y = self.monitors_name[display_choice]["y"]
 
         x = self.get_value(name_x, resh=False)
         y = self.get_value(name_y)[indice]
@@ -269,7 +288,7 @@ class MyPlugin(Plugin):
 
     def find_file_name(self):
         # Find all files in the results folder that match with any monitor type
-
+        # Ne pas changer le nom des monitors sinon il ne l'est trouve plus
         folder = Path(RESULT_FOLDER)
         files_name = [f.name for f in folder.iterdir() if f.is_file()]
 
@@ -345,9 +364,10 @@ class MyPlugin(Plugin):
 
     def stop_main(self):
         if self.sub_main:
+            self.publish_stop_brian()
+            time.sleep(1)  # Wait for the process to respond
             try:
-                self.sub_main.terminate()
-                self.sub_main.wait()  # Ensure the process is terminated
+                self.publish_shutdown_brian()
             except Exception as e:
                 print(f"❌ \033[31m  Failed to kill Main : {e} \033[0m")
             finally:

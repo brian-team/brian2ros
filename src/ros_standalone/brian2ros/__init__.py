@@ -795,14 +795,13 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
         pck_file = self.templater.package(None, None)
         writer.write("package.xml", pck_file)
     
-    def display_monitors(self, monitors):
+    def publish_monitors(self, monitors):
 
         spike_monitors_nb = 0
         state_monitors_nb = 0
         population_rate_monitors_nb = 0
 
         for monitor in monitors:
-            print("Monitor detected : ", monitor.name, " of type ", type(monitor))
             if isinstance(monitor, SpikeMonitor):
                 spike_monitors_nb += 1
                 self.templater.env.globals["pub_monitors"].append(

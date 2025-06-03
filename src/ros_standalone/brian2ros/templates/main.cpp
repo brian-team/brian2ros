@@ -74,20 +74,19 @@
         std::cout << "Brian simulation finished in " << (t_end - t_start) << " seconds." << std::endl;
         ros_obj->brian_state = false;
         //sleep(1);
-        node_executors->remove_node(ros_obj);
         {% for subscriber in subscribers %}
         ros_obj->{{subscriber["name"]}}_test = false;
         {% endfor %}
     }
     
-    
+   
     
     
     void brian_control_callback(std::vector<std::string>& args){
     // Callback function to receive commands from interface to start/stop/restart the simulation.
     
-       
-    
+
+        std::cout << "Starting brian_control_callback" << std::endl;
         // Start the simulation
         // If the simulation is already running, print a message and return.
         // Otherwise, create a ROS2 node and start the simulation in a separate thread.
@@ -96,7 +95,7 @@
     
         // Create a ROS2 object wich is shared.
         ros_obj = std::make_shared<ROS>();
-        
+
         // Start the Brian simulation in a separate thread.
         brian_sim = new std::thread(brian_running, args);
         
@@ -105,9 +104,10 @@
         
         // Set the Brian state to true to indicate that the simulation is running.
         ros_obj->brian_state = true;
-    
+
+
         }
-    
+
     
     int main(int argc, char **argv)
     {

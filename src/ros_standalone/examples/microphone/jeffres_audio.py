@@ -7,7 +7,7 @@ defaultclock.dt = 1 / 48_000 * second
 # Create a ROS Subscriber for audio input
 audio = Subscriber(
     name="audio",
-    topic="audio_sin",
+    topic="audio_data",
     topic_type="turtleaudio/msg/StereoAudioBlock",
     output={"left": np.int16(np.linspace(0,1023,1024)), "right": np.int16(np.linspace(0,1023,1024))},
     header="turtleaudio/msg/stereo_audio_block.hpp",
@@ -61,5 +61,5 @@ spikes = SpikeMonitor(neurons)
 son = StateMonitor(ears, 'x', record=True)
 spikes_thresh = StateMonitor(ears, 'thresh', record=True)
 
-get_device().display_monitors([spikes, son, spikes_thresh])
+get_device().publish_monitors([spikes, son, spikes_thresh])
 run(10 * second, report="text", report_period=1 * second)
