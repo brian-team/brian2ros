@@ -368,7 +368,6 @@ class Ui_Form(QMainWindow):
             y=data_plot.DataPlot.SCALE_EXTEND | data_plot.DataPlot.SCALE_VISIBLE
         )
         self._data_plot.set_xlim([0, 10.0])
-        print(f"\n\n TOPIC LIST {self.rqt_plot._node.get_topic_names_and_types()}\n\n")
         self.rqt_plot.switch_data_plot_widget(self._data_plot)
         self.tabWidget.addTab(self.rqt_plot, "Plot")
 
@@ -435,7 +434,7 @@ class Ui_Form(QMainWindow):
                         and name != "robot_state_publisher.launch.py"
                     ):
                         file.append(name)
-                    print("File : ", name)
+                    #print("File : ", name)
             for i in range(len(file)):
                 self.map_box.addItem("")
                 self.map_box.setItemText(

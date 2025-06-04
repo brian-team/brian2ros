@@ -82,11 +82,10 @@
    
     
     
-    void brian_control_callback(std::vector<std::string>& args){
+    void brianros_executor(std::vector<std::string>& args){
     // Callback function to receive commands from interface to start/stop/restart the simulation.
     
 
-        std::cout << "Starting brian_control_callback" << std::endl;
         // Start the simulation
         // If the simulation is already running, print a message and return.
         // Otherwise, create a ROS2 node and start the simulation in a separate thread.
@@ -130,7 +129,7 @@
         node_executors = rclcpp::executors::MultiThreadedExecutor::make_shared();
     
         // Add and start the control node to the executor
-        brian_control_callback(args);
+        brianros_executor(args);
         node_executors->spin();
         rclcpp::shutdown();
     

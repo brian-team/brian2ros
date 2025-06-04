@@ -46,6 +46,7 @@ class MyPlugin(Plugin):
         self.start_user = False
         self.sub_main = None
         self.ui_results = None
+        self.current_plot = []
         # Load the JSON file
         path = os.environ["BRIAN_JSON"]
         with open(path) as f:
@@ -71,7 +72,8 @@ class MyPlugin(Plugin):
         self.ui.show_results.clicked.connect(self.show_results)
         self.ui.stop_brian.clicked.connect(self.publish_stop_brian)
 
-        self.ui_results.showButton.clicked.connect(self.display)
+        self.ui_results.plusButton.clicked.connect(self.add_display)
+        self.ui_results.minusButton.clicked.connect(self.remove_last_display)
 
         self.time.connect(self.ui.textBrowser_2.setText)
         self.progress_sim.connect(self.ui.progressBar.setValue)
@@ -145,6 +147,10 @@ class MyPlugin(Plugin):
 
         self.publisher_control = self.node.create_publisher(String, "brian_control", 10)
 
+##=====================================##
+# Controll functions with the main file #
+##=====================================##
+
     def publish_stop_brian(self):
         # Publish a message to stop the simulation
         msg = String()
@@ -158,6 +164,167 @@ class MyPlugin(Plugin):
         msg.data = "shutdown"
         self.publisher_control.publish(msg)
         print("\033[34m Shutting down the simulation ... \033[0m")
+
+
+##======================##
+# Show results functions #
+##======================##
+
+    # Function to empty the results folder 
+    def empty_file(self, file_path):
+        file = Path(file_path)
+        for element in file.iterdir():
+            if element.is_file() or element.is_symlink():
+                element.unlink()
+            elif element.is_dir():
+                shutil.rmtree(element)
+
+    # Check if the folder is empty
+    def is_file_empty(self, file_path):
+        return not any(Path(file_path).iterdir())
+
+    def show_results(self):
+        if not self.is_file_empty(RESULT_FOLDER):
+            print("\033[34m Opening results folder ... \033[0m")
+            self.monitors_name = self.find_file_name()
+            self.ui_results.comboBox.clear()
+            self.ui_results.comboBox.addItems(
+                [name for name in self.monitors_name.keys()]
+            )
+            self.ui_results.show()
+        else:
+            print("\033[31m ❌ Results folder is empty, please start a new simulation or wait for the end of the current one \033[0m")
+
+    ##=====
+    # Function in the show results window
+    ##=====
+    
+    # Function to add a new plot, called when the user clicks on the show button
+    def display(self,add=False):
+        display_choice = self.ui_results.comboBox.currentText()
+        indice = self.ui_results.textInput.text()
+        
+        try:
+            indice = int(indice)
+        except ValueError:
+            print("\033[31m ❌ Invalid index, please enter a valid integer \033[0m")
+            return
+        
+        name_x = self.monitors_name[display_choice]["x"]
+        name_y = self.monitors_name[display_choice]["y"]
+        monitor_type = self.monitors_name[display_choice]["type"]
+
+        x = self.get_value(name_x, 'time')
+        if monitor_type == "spikemonitor":
+            y = self.get_value(name_y, monitor_type)
+        else:
+            y = self.get_value(name_y, monitor_type)[indice]
+
+        self.plot_array_2d(x,y,monitor_type,add)
+        self.current_plot.append({"name": display_choice, "index": indice})
+        
+
+    def find_file_name(self):
+        # Find all files in the results folder that match with any monitor type
+        # Ne pas changer le nom des monitors sinon il ne l'est trouve plus
+        folder = Path(RESULT_FOLDER)
+        files_name = [f.name for f in folder.iterdir() if f.is_file()]
+
+        looking_for = ["statemonitor", "spikemonitor", "ratemonitor"]
+
+        unmatch_x = []
+        unmatch_y = []
+
+        res = {}
+        for name in files_name:
+            for look in looking_for:
+
+                if look in name.split("_") and "t" in name.split("_") and "dynamic" in name.split("_"):
+                    unmatch_x.append([name, os.path.join(folder, name)])
+
+                if look in name.split("_") and "t" not in name.split("_") and "dynamic" in name.split("_"):
+                    unmatch_y.append([name, os.path.join(folder, name),look])
+
+        for x in unmatch_x:
+            for y in unmatch_y:
+
+                if x[0].split("_dynamic_array_")[-1].split("_")[:-2] == y[0].split("_dynamic_array_")[-1].split("_")[:-2]:
+                    res["_".join(y[0].split("_")[:-1])] = {"x": x[1], "y": y[1], "type": y[2]}
+
+        return res
+            
+    def get_value(self, fname, monitor_type):
+        
+        with open(fname, "rb") as f:
+            if monitor_type == "spikemonitor":
+                # For spikemonitor, we read the data as int32
+                data = np.fromfile(f, dtype=np.int32)
+                resh = False  # Spikemonitor data is not reshaped
+            elif monitor_type == "ratemonitor":
+                # For ratemonitor, we read the data as float64
+                data = np.fromfile(f, dtype=np.float64)
+                resh = False  # Ratemonitor data is not reshaped
+            elif monitor_type == "statemonitor":
+                # For statemonitor, we read the data as float64
+                data = np.fromfile(f, dtype=np.float64)
+                resh = True  # Statemonitor data is reshaped to 2D
+            elif monitor_type == "time":
+                # For time, we read the data as float64
+                data = np.fromfile(f, dtype=np.float64)
+                resh = False  # Time data is not reshaped
+            else:
+                raise ValueError(f"Unknown monitor type: {monitor_type}")
+        if resh:
+            data = data.reshape(2, -1)
+        return data
+
+    def plot_array_2d(self, x, y, monitor_type,add=False):
+        if not add:
+            self.ui_results.plot.ax.clear()
+        if monitor_type == "spikemonitor":
+            self.ui_results.plot.ax.plot(x, y, '.')
+        elif monitor_type == "ratemonitor":
+            self.ui_results.plot.ax.plot(x, y, marker='o', linestyle='-', color='g')
+        elif monitor_type == "statemonitor":
+            self.ui_results.plot.ax.plot(x, y, '-', linewidth=1.)
+        self.ui_results.plot.ax.set_title("Simulation Results")
+        self.ui_results.plot.ax.set_xlabel("Time")
+        self.ui_results.plot.ax.set_ylabel("Value")
+        self.ui_results.plot.figure.tight_layout()
+        self.ui_results.plot.draw()
+
+    def add_display(self):
+        new_display = self.ui_results.comboBox.currentText()
+        new_indice = self.ui_results.textInput.text()
+        for plot in self.current_plot:
+            if plot["name"] == new_display and plot["index"] == int(new_indice):
+                print("\033[31m ❌ This plot is already displayed \033[0m")
+                return
+        
+        self.display(add=True)
+
+    def remove_last_display(self):
+        if len(self.current_plot) == 0:
+            print("\033[31m ❌ No plot to remove \033[0m")
+            return
+        last_plot = self.current_plot.pop()
+        print(f"\033[34m Removing plot: {last_plot['name']} at index {last_plot['index']} \033[0m")
+        self.ui_results.plot.ax.clear()
+        for plot in self.current_plot:
+            name = plot["name"]
+            index = plot["index"]
+            x = self.get_value(self.monitors_name[name]["x"], 'time')
+            if self.monitors_name[name]["type"] == "spikemonitor":
+                y = self.get_value(self.monitors_name[name]["y"], self.monitors_name[name]["type"])
+            else:
+                y = self.get_value(self.monitors_name[name]["y"], self.monitors_name[name]["type"])[index]
+            self.plot_array_2d(x, y, self.monitors_name[name]["type"], add=True)
+        self.ui_results.plot.figure.tight_layout()
+        self.ui_results.plot.draw()
+
+##===========================##
+# Interface control functions #
+##===========================##
 
     def on_loop_button_state_changed(self, state):
         # Check if the loop button is checked
@@ -242,95 +409,6 @@ class MyPlugin(Plugin):
 
         else:
             self.wait_time = self.t
-
-    # Function to empty the results folder 
-    def empty_file(self, file_path):
-        file = Path(file_path)
-        for element in file.iterdir():
-            if element.is_file() or element.is_symlink():
-                element.unlink()
-            elif element.is_dir():
-                shutil.rmtree(element)
-
-    # Check if the folder is empty
-    def is_file_empty(self, file_path):
-        return not any(Path(file_path).iterdir())
-
-    def show_results(self):
-        if not self.is_file_empty(RESULT_FOLDER):
-            print("\033[34m Opening results folder ... \033[0m")
-            self.monitors_name = self.find_file_name()
-            self.ui_results.comboBox.clear()
-            self.ui_results.comboBox.addItems(
-                [name for name in self.monitors_name.keys()]
-            )
-            self.ui_results.show()
-        else:
-            print("\033[31m ❌ Results folder is empty, please start a new simulation or wait for the end of the current one \033[0m")
-
-    def display(self):
-        display_choice = self.ui_results.comboBox.currentText()
-        indice = self.ui_results.textInput.text()
-        
-        try:
-            indice = int(indice)
-        except ValueError:
-            print("\033[31m ❌ Invalid index, please enter a valid integer \033[0m")
-            return
-        
-        name_x = self.monitors_name[display_choice]["x"]
-        name_y = self.monitors_name[display_choice]["y"]
-
-        x = self.get_value(name_x, resh=False)
-        y = self.get_value(name_y)[indice]
-
-        self.plot_array_2d(x,y)
-
-    def find_file_name(self):
-        # Find all files in the results folder that match with any monitor type
-        # Ne pas changer le nom des monitors sinon il ne l'est trouve plus
-        folder = Path(RESULT_FOLDER)
-        files_name = [f.name for f in folder.iterdir() if f.is_file()]
-
-        looking_for = ["statemonitor", "spikemonitor", "ratemonitor"]
-
-        unmatch_x = []
-        unmatch_y = []
-
-        res = {}
-        for name in files_name:
-            for look in looking_for:
-
-                if look in name.split("_") and "t" in name.split("_") and "dynamic" in name.split("_"):
-                    unmatch_x.append([name, os.path.join(folder, name)])
-
-                if look in name.split("_") and "t" not in name.split("_") and "dynamic" in name.split("_"):
-                    unmatch_y.append([name, os.path.join(folder, name)])
-
-        for x in unmatch_x:
-            for y in unmatch_y:
-
-                if x[0].split("_dynamic_array_")[-1].split("_")[:-2] == y[0].split("_dynamic_array_")[-1].split("_")[:-2]:
-                    res["_".join(y[0].split("_")[:-1])] = {"x": x[1], "y": y[1]}
-
-        return res
-            
-    def get_value(self, fname, resh=True):
-        with open(fname, "rb") as f:
-            data = np.fromfile(f)
-        if resh:
-            data = data.reshape(2, -1)
-        return data
-
-    def plot_array_2d(self, x, y):
-        self.ui_results.plot.ax.clear()
-        self.ui_results.plot.ax.plot(x, y, marker='.', linestyle='-', color='b')
-        self.ui_results.plot.ax.set_title("Simulation Results")
-        self.ui_results.plot.ax.set_xlabel("Time")
-        self.ui_results.plot.ax.set_ylabel("Value")
-        self.ui_results.plot.figure.tight_layout()
-        self.ui_results.plot.draw()
-
 
     def start_main(self):
         
@@ -452,8 +530,6 @@ class MyPlugin(Plugin):
             # Avoid to start the simulation twice
             self.start_user = True
 
-
-
     def restart_gazebo(self):
         print("\033[34m Restarting Gazebo and Simulation ... \033[0m")
         self.stop_gazebo()
@@ -464,6 +540,7 @@ class MyPlugin(Plugin):
         print("\033[32m \u2713 Gazebo and Simulation restarted \033[0m")
 
         self.sim_launch = True
+
     def restart_brian(self):
         print("\033[34m Restarting Simulation ... \033[0m")
         self.stop_main()

@@ -52,25 +52,32 @@ class Ui_Form(QWidget):
         self.comboBox = QComboBox(self.right_panel)
         self.comboBox.setGeometry(QRect(20, 30, 210, 30))
         self.comboBox.setObjectName("comboBox")
-        self.comboBox.setFont(QFont("Arial", 10))
+        self.comboBox.setFont(QFont("Futura", 10))
 
         self.label_input = QLabel(self.right_panel)
         self.label_input.setGeometry(QRect(20, 80, 210, 20))
-        self.label_input.setText("Durée à afficher (ms) :")
-        self.label_input.setFont(QFont("Arial", 10))
+        self.label_input.setText("Index :")
+        self.label_input.setFont(QFont("Futura", 10))
 
         from PyQt5.QtWidgets import QLineEdit
         self.textInput = QLineEdit(self.right_panel)
         self.textInput.setGeometry(QRect(20, 110, 210, 30))
         self.textInput.setPlaceholderText("Ex: 0")
-        self.textInput.setFont(QFont("Arial", 10))
+        self.textInput.setFont(QFont("Futura", 10))
 
-        self.showButton = QPushButton(self.right_panel)
-        self.showButton.setGeometry(QRect(20, 160, 210, 40))
-        self.showButton.setText("Show")
-        self.showButton.setFont(QFont("Arial", 11, QFont.Bold))
-        self.showButton.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; border-radius: 5px; }"
-                                    "QPushButton:hover { background-color: #45a049; }")
-
+        self.plusButton = QPushButton(self.right_panel)
+        self.plusButton.setGeometry(QRect(20, 160, 100, 40))
+        self.plusButton.setText("+")
+        self.plusButton.setFont(QFont("Futura", 20, QFont.Bold))
+        self.plusButton.setStyleSheet("QPushButton { background-color: #2196F3; color: white; border-radius: 5px; }"
+                                    "QPushButton:hover { background-color: #0b7dda; }")
+        
+        self.minusButton = QPushButton(self.right_panel)
+        self.minusButton.setGeometry(QRect(130, 160, 100, 40))
+        self.minusButton.setText("-")
+        self.minusButton.setFont(QFont("Futura", 20, QFont.Bold))
+        self.minusButton.setStyleSheet("QPushButton { background-color: #f44336; color: white; border-radius: 5px; }"
+                                    "QPushButton:hover { background-color: #da190b; }")
+        
 
         QMetaObject.connectSlotsByName(Form)
