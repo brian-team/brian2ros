@@ -92,49 +92,7 @@ class MyPlugin(Plugin):
         # Create the different plot widgets
         self.plot_widgets = {}
         self._curves = {}
-        for monitor in self.monitors:
-            if monitor["type"] == "Float64":
-                if monitor["name"].split("_")[0] == "spikemonitor":
-                    monitor_tab = QWidget()
-                    plot_widget = pg.PlotWidget(monitor_tab)
-                    plot_widget.setGeometry(QRect(20, 20, 851, 581))
-                    self.ui.tabWidget.addTab(monitor_tab, monitor["name"])
-                    symbol = "o"
-                    symbolPen = pg.mkPen(QColor(Qt.green))
-
-                    plot = plot_widget.plot(
-                        [],
-                        [],
-                        name=monitor["name"],
-                        symbol=symbol,
-                        symbolPen=symbolPen,
-                        symbolSize=4,
-                        pen=None,
-                    )
-                    self.plot_widgets[monitor["name"]] = plot_widget
-                    self._curves[monitor["name"]] = plot
-                elif monitor["name"].split("_")[0] == "ratemonitor":
-                    monitor_tab = QWidget()
-                    plot_widget = pg.PlotWidget(monitor_tab)
-                    plot_widget.setGeometry(QRect(20, 20, 851, 581))
-                    self.ui.tabWidget.addTab(monitor_tab, monitor["name"])
-
-                    symbolPen = pg.mkPen(QColor(Qt.green))
-
-                    plot = plot_widget.plot(
-                        [],
-                        [],
-                        name=monitor["name"],
-                        pen=symbolPen,
-                        symbol=None,
-                        symbolPen=None,
-                        symbolSize=4,
-                    )
-
-                    self.plot_widgets[monitor["name"]] = plot_widget
-                    self._curves[monitor["name"]] = plot
-                else:
-                    raise Exception("Unknown monitor type")
+        self.create_plot_widget()
 
         # Launch the function once at the beginning to avoid the first choice to be lost
         self.on_loop_button_state_changed(0)
@@ -147,6 +105,7 @@ class MyPlugin(Plugin):
 
         self.publisher_control = self.node.create_publisher(String, "brian_control", 10)
 
+    
 ##=====================================##
 # Controll functions with the main file #
 ##=====================================##
@@ -325,6 +284,52 @@ class MyPlugin(Plugin):
 ##===========================##
 # Interface control functions #
 ##===========================##
+
+    def create_plot_widget(self):
+        for monitor in self.monitors:
+            if monitor["type"] == "Float64":
+                if monitor["name"].split("_")[0] == "spikemonitor":
+                    monitor_tab = QWidget()
+                    plot_widget = pg.PlotWidget(monitor_tab)
+                    plot_widget.setGeometry(QRect(20, 20, 851, 581))
+                    self.ui.tabWidget.addTab(monitor_tab, monitor["name"])
+                    symbol = "o"
+                    symbolPen = pg.mkPen(QColor(Qt.green))
+
+                    plot = plot_widget.plot(
+                        [],
+                        [],
+                        name=monitor["name"],
+                        symbol=symbol,
+                        symbolPen=symbolPen,
+                        symbolSize=4,
+                        pen=None,
+                    )
+                    self.plot_widgets[monitor["name"]] = plot_widget
+                    self._curves[monitor["name"]] = plot
+
+                elif monitor["name"].split("_")[0] == "ratemonitor":
+                    monitor_tab = QWidget()
+                    plot_widget = pg.PlotWidget(monitor_tab)
+                    plot_widget.setGeometry(QRect(20, 20, 851, 581))
+                    self.ui.tabWidget.addTab(monitor_tab, monitor["name"])
+
+                    symbolPen = pg.mkPen(QColor(Qt.green))
+
+                    plot = plot_widget.plot(
+                        [],
+                        [],
+                        name=monitor["name"],
+                        pen=symbolPen,
+                        symbol=None,
+                        symbolPen=None,
+                        symbolSize=4,
+                    )
+
+                    self.plot_widgets[monitor["name"]] = plot_widget
+                    self._curves[monitor["name"]] = plot
+                else:
+                    raise Exception("Unknown monitor type")
 
     def on_loop_button_state_changed(self, state):
         # Check if the loop button is checked
@@ -544,6 +549,9 @@ class MyPlugin(Plugin):
     def restart_brian(self):
         print("\033[34m Restarting Simulation ... \033[0m")
         self.stop_main()
+        for n in self.plot_widgets:
+            self.ui.tabWidget.removeTab(-1)
+        self.create_plot_widget()  # Recreate the plot widgets
         self.start_main()
 
         print("\033[32m \u2713 Simulation restarted \033[0m")
