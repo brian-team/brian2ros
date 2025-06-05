@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.io.wavfile import write
 
 # --- Paramètres ---
-duration = 5  # Durée de l'enregistrement (en secondes)
+duration = 10  # Durée de l'enregistrement (en secondes)
 samplerate = 48000  # Taux d'échantillonnage (en Hz)
 
 for i, device in enumerate(sd.query_devices()):
@@ -12,7 +12,7 @@ for i, device in enumerate(sd.query_devices()):
 
 # --- Enregistrement ---
 print("🎙️ Enregistrement en cours...")
-audio = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=2, dtype='float32', device=6)
+audio = sd.rec(int(duration * samplerate), samplerate=samplerate, channels=2, dtype='float32', device=7)
 sd.wait()  # Attendre que l'enregistrement soit terminé
 print("✅ Enregistrement terminé.")
 
