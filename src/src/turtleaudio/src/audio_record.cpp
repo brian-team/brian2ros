@@ -8,12 +8,12 @@
 #include <time.h>
 #include "std_msgs/msg/header.hpp"
 #include "rclcpp/qos.hpp"
+#include <sndfile.h>
 
 #define CHANNELS 2 // Stéréo
 #define SAMPLE_RATE 48000
 #define BUFFER_SIZE 1024
 
-#define MAX_FRAMES 20000 // Nombre maximum de frames à lire
 using namespace std::chrono_literals;
 using turtleaudio::msg::StereoAudioBlock;
 
@@ -24,13 +24,13 @@ PaStream *_init_input_stream()
   err = Pa_Initialize();
   if (err != paNoError)
   {
-    std::cerr << "Erreur d'initialisation PortAudio : " << Pa_GetErrorText(err) << std::endl;
+    std::cerr << "Initialization error of PortAudio : " << Pa_GetErrorText(err) << std::endl;
     exit(err);
   }
 
   err = Pa_OpenDefaultStream(&stream,
-                             CHANNELS, // 2 canaux d'entrée (stéréo)
-                             0,        // Pas de sortie
+                             CHANNELS,
+                             0,
                              paInt16,
                              SAMPLE_RATE,
                              BUFFER_SIZE,
@@ -38,24 +38,25 @@ PaStream *_init_input_stream()
                              NULL);
   if (err != paNoError)
   {
-    std::cerr << "Erreur d'ouverture du flux : " << Pa_GetErrorText(err) << std::endl;
+    std::cerr << "Stream open Error : " << Pa_GetErrorText(err) << std::endl;
     exit(err);
   }
 
   err = Pa_StartStream(stream);
   if (err != paNoError)
   {
-    std::cerr << "Erreur au démarrage du flux : " << Pa_GetErrorText(err) << std::endl;
+    std::cerr << "Stream Error in start : " << Pa_GetErrorText(err) << std::endl;
     exit(err);
   }
 
   return stream;
 }
+
 class AudioRecorder : public rclcpp::Node
 {
 public:
-  AudioRecorder()
-      : Node("audio_recorder")
+AudioRecorder(const std::string &wav_path = "", int max_frames = 20000)
+    : Node("audio_recorder"), wav_path_(wav_path), max_frames_(max_frames)
   {
     rclcpp::QoS qos_audio_realtime(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
     qos_audio_realtime
@@ -71,72 +72,145 @@ public:
 
     auto seconds = static_cast<double>(BUFFER_SIZE) / SAMPLE_RATE;
     auto period = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(seconds));
-    timer = this->create_wall_timer(
-        period, std::bind(&AudioRecorder::get_sample, this));
 
-    publisher_sin = this->create_publisher<StereoAudioBlock>("audio_sin", qos_audio_realtime);
+    if (!wav_path_.empty() && wav_path_ != "sin" && wav_path_ != "portaudio") 
+    {
+      RCLCPP_INFO(this->get_logger(), "Read and publish WAV file : %s", wav_path_.c_str());
+      timer = this->create_wall_timer(
+          period, std::bind(&AudioRecorder::get_sample_from_wav, this));
+      open_wav_file();
+    } 
+    else if (wav_path_ == "sin") 
+    {
+      RCLCPP_INFO(this->get_logger(), "Sinusoidal audio input for testing.");
+      timer = this->create_wall_timer(
+          period, std::bind(&AudioRecorder::get_sample_sin, this));
+    }
+    else if (wav_path_ == "portaudio")
+    {
+      RCLCPP_INFO(this->get_logger(), "Real-time audio input with PortAudio.");
+      timer = this->create_wall_timer(
+          period, std::bind(&AudioRecorder::get_sample, this));
+    }
+    else 
+    {
+      RCLCPP_ERROR(this->get_logger(), "No valid input source specified. Use a WAV file path or 'sin' for sinusoidal input or 'portaudio' for real-time audio input.");
+      rclcpp::shutdown();
+    }
 
-    msg_sin.left.data.resize(BUFFER_SIZE);
-    msg_sin.right.data.resize(BUFFER_SIZE);
+  }
 
-    timer_sin = this->create_wall_timer(
-        period, std::bind(&AudioRecorder::get_sample_sin, this));
+  ~AudioRecorder() 
+  {
+    if (sndfile_) 
+    {
+      sf_close(sndfile_);
+      sndfile_ = nullptr;
+    }
   }
 
 private:
 
-void get_sample_sin()
-{
-  constexpr double frequency = 440.0; 
-  constexpr double amplitude = 300.0; 
-  constexpr double sound_speed = 343.0;
-  constexpr double distance = 0.2; // Distance entre les deux microphones
-  constexpr double max_delay = distance / sound_speed;
+  // This function opens a WAV file using the libsndfile library.
+  // It initializes the SF_INFO structure and opens the file for reading.
+  // If the file cannot be opened or has an unsupported number of channels,
+  // it logs an error message and shuts down the ROS node.
 
-  for (size_t i = 0; i < BUFFER_SIZE; ++i)
+  void open_wav_file() 
   {
-    double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
+    sfinfo_ = {};
+    // Base directory where WAV files are stored
+    std::string base_path = "src/src/turtleaudio/src/recorded_sound/";
+    // Concatenate full path
+    std::string full_path = base_path + wav_path_;
 
-    double left_delay = -0.5 * max_delay * sin(phase_shift); 
-    double right_delay = 0.5 * max_delay * sin(phase_shift);
-
-    int16_t left_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * (t - left_delay)));
-    int16_t right_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * (t - right_delay)));
-
-    msg_sin.left.data[i] = left_sample;
-    msg_sin.right.data[i] = right_sample;
+    sndfile_ = sf_open(full_path.c_str(), SFM_READ, &sfinfo_);
+    if (!sndfile_) {
+      RCLCPP_ERROR(this->get_logger(), "Error opening WAV file : %s", sf_strerror(nullptr));
+      rclcpp::shutdown();
+    }
+    if (sfinfo_.channels < 1 || sfinfo_.channels > 2) {
+      RCLCPP_ERROR(this->get_logger(), "Unsupported number of channels in WAV file: %d", sfinfo_.channels);
+      rclcpp::shutdown();
+    }
   }
-  RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count_sin);
-  if (frame_count_sin >= MAX_FRAMES)
+
+  void get_sample_from_wav() 
   {
-    RCLCPP_INFO(this->get_logger(), "Nombre maximum de frames atteint, arrêt du noeud.");
-    rclcpp::shutdown();
+    std::vector<int16_t> read_buffer(BUFFER_SIZE * sfinfo_.channels);
+    sf_count_t frames_read = sf_readf_short(sndfile_, read_buffer.data(), BUFFER_SIZE);
+    if (frames_read <= 0) {
+      RCLCPP_INFO(this->get_logger(), "End of WAV file reached");
+      rclcpp::shutdown();
+      return;
+    }
+
+    for (size_t i = 0; i < frames_read; ++i) {
+      msg.left.data[i] = read_buffer[i * sfinfo_.channels];
+      msg.right.data[i] = sfinfo_.channels > 1 ? read_buffer[i * sfinfo_.channels + 1] : 0;
+    }
+
+    msg.header.frame_id = std::to_string(frame_count);
+    msg.header.stamp = this->now();
+    publisher->publish(msg);
+    frame_count++;
   }
-  msg_sin.header.frame_id = std::to_string(frame_count_sin);
-  msg_sin.header.stamp = this->now();
-  frame_count_sin++;
 
-  phase_shift += M_PI / 250;
+  // This function generates a sine wave signal for testing purposes.
+  // It simulates a sound wave with a frequency of 440 Hz (A4 note) and a phase shift.
+  // The left and right channels are delayed by a small amount to simulate stereo sound.
 
-  publisher_sin->publish(msg_sin);
-}
-  StereoAudioBlock msg_sin;
-  rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher_sin;
-  rclcpp::TimerBase::SharedPtr timer_sin;
-  int64_t sample_index_sin = 0;  
-  int frame_count_sin = 0;
-  double phase_shift = 0;
+  void get_sample_sin() 
+  {
+    constexpr double frequency = 440.0;
+    constexpr double amplitude = 300.0;
+    constexpr double sound_speed = 343.0;
+    constexpr double distance = 0.2;
+    constexpr double max_delay = distance / sound_speed;
 
+    for (size_t i = 0; i < BUFFER_SIZE; ++i) 
+    {
+      double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
+      double left_delay = -0.5 * max_delay * sin(phase_shift);
+      double right_delay = 0.5 * max_delay * sin(phase_shift);
 
+      int16_t left_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * (t - left_delay)));
+      int16_t right_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * (t - right_delay)));
 
-  void get_sample()
+      msg.left.data[i] = left_sample;
+      msg.right.data[i] = right_sample;
+    }
+
+    if (frame_count_sin % 100 == 0)
+      RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count_sin);
+
+    if (frame_count_sin >= max_frames_)
+    {
+      RCLCPP_INFO(this->get_logger(), "Maximum number of frames reached, stopping node.");
+      rclcpp::shutdown();
+    }
+
+    msg.header.frame_id = std::to_string(frame_count_sin);
+    msg.header.stamp = this->now();
+    frame_count_sin++;
+    phase_shift += M_PI / 250;
+    publisher->publish(msg);
+  }
+
+  // This function reads audio samples from the input stream and publishes them as StereoAudioBlock messages.
+  // It uses PortAudio to read the audio data and fills the left and right channels of the message.
+  // The function also manages the frame count and stops the stream after reaching the maximum number of frames.
+  // If an error occurs during reading, it logs the error message and continues to the next iteration.
+  // The function is called periodically based on the timer set in the constructor.
+
+  void get_sample() 
   {
     static PaStream *stream = _init_input_stream();
 
     PaError err = Pa_ReadStream(stream, buffer.data(), BUFFER_SIZE);
-    if (err != paNoError)
+    if (err != paNoError) 
     {
-      std::cerr << "Erreur de lecture : " << Pa_GetErrorText(err) << std::endl;
+      std::cerr << "Stream read error : " << Pa_GetErrorText(err) << std::endl;
       return;
     }
 
@@ -144,20 +218,22 @@ void get_sample_sin()
     short int *dst_left = msg.left.data.data();
     short int *dst_right = msg.right.data.data();
 
-    for (size_t i = 0; i < BUFFER_SIZE; ++i)
+    for (size_t i = 0; i < BUFFER_SIZE; ++i) 
     {
-      *dst_left++ = static_cast<int16_t>(*src++);  // canal gauche
-      *dst_right++ = static_cast<int16_t>(*src++); // canal droit
+      *dst_left++ = static_cast<int16_t>(*src++);
+      *dst_right++ = static_cast<int16_t>(*src++);
     }
 
     msg.header.frame_id = std::to_string(frame_count);
     msg.header.stamp = this->now();
     publisher->publish(msg);
 
-    RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count);
-    if (frame_count >= MAX_FRAMES)
-    {
-      RCLCPP_INFO(this->get_logger(), "Nombre maximum de frames atteint, arrêt du noeud.");
+    if (frame_count % 100 == 0)
+      RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count);
+
+    if (frame_count >= max_frames_)
+     {
+      RCLCPP_INFO(this->get_logger(), "Maximum number of frames reached, stopping node.");
       Pa_StopStream(stream);
       Pa_CloseStream(stream);
       Pa_Terminate();
@@ -171,13 +247,27 @@ void get_sample_sin()
   rclcpp::TimerBase::SharedPtr timer;
   rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher;
   int frame_count = 0;
+
+  rclcpp::TimerBase::SharedPtr timer_sin;
+  int64_t sample_index_sin = 0;
+  int frame_count_sin = 0;
+  double phase_shift = 0;
+
+  std::string wav_path_;
+  SNDFILE *sndfile_ = nullptr;
+  SF_INFO sfinfo_ = {};
+  int max_frames_;
+
 };
 
-// Main entry point
 int main(int argc, char **argv)
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<AudioRecorder>());
+
+  std::string wav_file = (argc > 1) ? argv[1] : "";
+  int max_frames = (argc > 2) ? std::atoi(argv[2]) : 20000;
+
+  rclcpp::spin(std::make_shared<AudioRecorder>(wav_file, max_frames));
   rclcpp::shutdown();
   return 0;
 }

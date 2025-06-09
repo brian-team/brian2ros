@@ -26,6 +26,7 @@ install(TARGETS
 )
 target_link_libraries(audio_record
   'portaudio'
+  sndfile
   ${cpp_typesupport_target}
 )
 
