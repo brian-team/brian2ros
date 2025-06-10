@@ -13,7 +13,7 @@ class MinimalSubscriber(Node):
                                    history=rclpy.qos.HistoryPolicy.KEEP_ALL)
         self.subscription = self.create_subscription(
             StereoAudioBlock,
-            'audio_sin',
+            'audio_data',
             self.listener_callback,
             qos)
         
@@ -35,6 +35,9 @@ class MinimalSubscriber(Node):
         self.count_diff = 0
         self.count_frame = 0
 
+        self.l_data = []
+        self.r_data = []
+
     def listener_callback(self, msg):
 
         if self.start:
@@ -42,7 +45,12 @@ class MinimalSubscriber(Node):
             self.start_time = time.time()
             self.current_time = time.time()
             self.start = False
-        
+        self.l_data.extend(msg.left.data)
+        self.r_data.extend(msg.right.data)
+        with open('audio_data.csv', 'a') as f:
+            for l, r in zip(msg.left.data, msg.right.data):
+                f.write(f"{l},{r}\n")
+
         #=================================#
         # Time simulation diff            #
         #=================================#
@@ -118,7 +126,7 @@ def main(args=None):
     rclpy.spin(minimal_subscriber)
     minimal_subscriber.destroy_node()
     rclpy.shutdown()
-
+    
 
 if __name__ == '__main__':
     main()

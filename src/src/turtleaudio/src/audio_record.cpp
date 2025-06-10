@@ -137,17 +137,17 @@ private:
 
   void get_sample_from_wav() 
   {
-    std::vector<int16_t> read_buffer(BUFFER_SIZE * sfinfo_.channels);
-    sf_count_t frames_read = sf_readf_short(sndfile_, read_buffer.data(), BUFFER_SIZE);
+    //RCLCPP_INFO(this->get_logger(), "Reading WAV file: %d", sfinfo_.channels);
+    std::vector<float> read_buffer(BUFFER_SIZE * sfinfo_.channels);
+    sf_count_t frames_read = sf_readf_float(sndfile_, read_buffer.data(), BUFFER_SIZE);
     if (frames_read <= 0) {
       RCLCPP_INFO(this->get_logger(), "End of WAV file reached");
       rclcpp::shutdown();
       return;
     }
-
     for (size_t i = 0; i < frames_read; ++i) {
-      msg.left.data[i] = read_buffer[i * sfinfo_.channels];
-      msg.right.data[i] = sfinfo_.channels > 1 ? read_buffer[i * sfinfo_.channels + 1] : 0;
+      msg.left.data[i] = static_cast<int16_t>(read_buffer[i * sfinfo_.channels] * 32767.0); // Assuming 16-bit PCM
+      msg.right.data[i] = static_cast<int16_t>(read_buffer[i * sfinfo_.channels + 1] * 32767.0); // Assuming 16-bit PCM
     }
 
     msg.header.frame_id = std::to_string(frame_count);
@@ -163,7 +163,7 @@ private:
   void get_sample_sin() 
   {
     constexpr double frequency = 440.0;
-    constexpr double amplitude = 300.0;
+    constexpr double amplitude = 30.0;
     constexpr double sound_speed = 343.0;
     constexpr double distance = 0.2;
     constexpr double max_delay = distance / sound_speed;

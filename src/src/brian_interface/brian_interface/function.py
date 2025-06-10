@@ -234,7 +234,7 @@ class MyPlugin(Plugin):
             else:
                 raise ValueError(f"Unknown monitor type: {monitor_type}")
         if resh:
-            data = data.reshape(2, -1)
+            data = data.reshape(-1, 2).T
         return data
 
     def plot_array_2d(self, x, y, monitor_type,add=False):

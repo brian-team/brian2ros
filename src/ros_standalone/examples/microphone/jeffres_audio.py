@@ -15,7 +15,7 @@ audio = Subscriber(
 
 # Ears parameters
 sound_speed = 343.0*metre/second
-distance_between_ears = 0.2*metre
+distance_between_ears = 0.22*metre
 sigma_ear = .1
 tau_ear = 0.5*ms
 max_delay = distance_between_ears / sound_speed
@@ -42,7 +42,7 @@ thresh = p * thresh
 '''
 
 ears = NeuronGroup(2, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
-                    name='ears', method='euler')
+                    name='ears', method='euler',refractory=0.5*ms)
 
 ears.thresh = [1, 1]
 eqs_neurons = '''
@@ -57,9 +57,13 @@ synapses.connect()
 synapses.delay['i==0'] = '(1.0*j)/(num_neurons-1)*1.1*max_delay'
 synapses.delay['i==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
 
+ears_spikes = SpikeMonitor(ears)
 spikes = SpikeMonitor(neurons)
+# Ne peut pas etre utilise en un seul state monitor
+sound = StateMonitor(ears, 'sound', record=True)
+thresh = StateMonitor(ears, 'thresh', record=True)
 son = StateMonitor(ears, 'x', record=True)
-spikes_thresh = StateMonitor(ears, 'thresh', record=True)
 
-get_device().publish_monitors([spikes, son, spikes_thresh])
-run(10 * second, report="text", report_period=1 * second)
+
+get_device().publish_monitors([ears_spikes, spikes, sound, thresh, son])
+run(8 * second, report="text", report_period=1 * second)

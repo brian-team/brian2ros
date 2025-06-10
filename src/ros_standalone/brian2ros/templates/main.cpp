@@ -76,6 +76,7 @@
         //sleep(1);
         {% for subscriber in subscribers %}
         ros_obj->{{subscriber["name"]}}_test = false;
+        std::cout << "End of Brian" << std::endl;
         {% endfor %}
     }
     
