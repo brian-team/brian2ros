@@ -25,14 +25,14 @@ num_neurons = 30
 tau = 0.2*ms
 
 # Thresholds
-a = 0.1
-p = 2.7
-tau_thresh = 2*ms
+a = 0
+p = 2.8
+tau_thresh = 20*ms
 
 # Ears and sound motion around the head (constant angular speed)
 eqs_ears = '''
 sound = audio(t,i) : 1 (constant over dt)
-dx/dt = (sound - x)/tau_ear : 1 
+dx/dt = (sound - x)/tau_ear : 1 (unless refractory)
 dthresh/dt = (a * clip(x, 0, inf) - thresh) / tau_thresh : 1
 '''
 
@@ -49,13 +49,16 @@ eqs_neurons = '''
 dv/dt = -v / tau : 1
 '''
 neurons = NeuronGroup(num_neurons, eqs_neurons, threshold='v>1',
-                       reset='v=0', name='neurons', method='euler')
+                       reset='v=0.2', name='neurons', method='euler',refractory=10*ms)
 # Connect ears to neurons
 synapses = Synapses(ears, neurons, on_pre='v += .65')
 synapses.connect()
 
 synapses.delay['i==0'] = '(1.0*j)/(num_neurons-1)*1.1*max_delay'
 synapses.delay['i==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
+
+wta = Synapses(neurons, neurons, on_pre='v -= 0.65')  
+wta.connect(condition='i != j') 
 
 ears_spikes = SpikeMonitor(ears)
 spikes = SpikeMonitor(neurons)

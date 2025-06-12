@@ -150,6 +150,7 @@ class MyPlugin(Plugin):
             self.ui_results.comboBox.addItems(
                 [name for name in self.monitors_name.keys()]
             )
+            self.ui_results.plot.ax.clear()
             self.ui_results.show()
         else:
             print("\033[31m ❌ Results folder is empty, please start a new simulation or wait for the end of the current one \033[0m")
