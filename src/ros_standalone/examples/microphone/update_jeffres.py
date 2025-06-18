@@ -21,7 +21,6 @@ tau_thresh = 5*ms
 lam = 0.5
 # Sin wave input parameters
 amplitude = 32  # Amplitude for 16-bit audio
-phase_shift = 1 * np.pi  # Phase shift for the sound
 chrono = 50
 max_delay = 0.2/343 * second
 eqs_ears = '''
@@ -40,7 +39,7 @@ rec_freq : Hz
 phase_shift : 1
 '''
 reset = '''
-thresh = p * thresh + lam * x
+thresh = p * thresh + lam * (x - thresh)
 x = 0
 '''
 ears = NeuronGroup(2, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
@@ -48,7 +47,6 @@ ears = NeuronGroup(2, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
 ears.thresh = [1, 1]
 ears.frequency = 720*Hz  # Initial frequency for the sound input  
 ears.rec_freq = ears.frequency  # Record the frequency for monitoring
-ears.phase_shift = phase_shift  # Initial phase shift for the sound input
 # @network_operation(dt=chrono*ms)
 # def change_freq():
 #     ears.frequency *= 1.2 # Increment frequency for demonstration
@@ -60,7 +58,7 @@ eqs_neurons = '''
 dv/dt = -v / tau : 1
 '''
 neurons = NeuronGroup(num_neurons, eqs_neurons, threshold='v>1',
-                       reset='v=0.2', name='neurons', method='euler',refractory=10*ms)
+                       reset='v=0', name='neurons', method='euler',refractory=10*ms)
 # Connect ears to neurons
 synapses = Synapses(ears, neurons, on_pre='v += .65')
 synapses.connect()
@@ -71,13 +69,18 @@ synapses.delay['i==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
 wta = Synapses(neurons, neurons, on_pre='v -= 0.65')  
 wta.connect(condition='i != j') 
 
+tau_radar = 0.5 * ms  # Time constant for the radar
+
 eqs_radar = '''
-dv/dt = 
+dv/dt = v / tau_radar : 1
 '''
 
-radar = NeuronGroup(1, eqs_radar)
-radar_synapses = Synapses(ears, radar, on_pre=)
-radar_synapses.connect()
+
+radar = NeuronGroup(num_neurons, eqs_radar)
+radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
+radar.pos = 0
+radar_synapses.connect(condition='j == i')
+
 
 res = SpikeMonitor(ears)
 spikes = SpikeMonitor(neurons)
@@ -86,6 +89,9 @@ state_rad = StateMonitor(radar, 'v', record=True)
 th_ears = StateMonitor(ears, 'thresh', record=True)
 run(5* second, report='text')
 
+for i in range(len(state_rad.v[0])):
+    tot = np.sum(state_rad.v[:, i])
+    
 # Plotting the results
 plt.figure(figsize=(18, 16))
 
@@ -115,7 +121,7 @@ plt.ylabel('Threshold value')
 plt.legend()
 
 plt.subplot(4, 1, 4)
-plt.plot(state_rad.t / ms, state_rad.v[0])
+plt.plot(state_rad.t / ms, res_pos, label='Radar Position', color='green')
 plt.title('Spike Times of Neurons')
 plt.xlabel('Time (ms)')
 plt.ylabel('Neuron Index')
