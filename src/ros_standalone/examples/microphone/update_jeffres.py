@@ -3,6 +3,7 @@ from brian2 import ms, NeuronGroup, Synapses, SpikeMonitor, StateMonitor, Networ
 from scipy.io import wavfile as wav
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.special import softmax
 
 sample_rate = 48 * kHz
 defaultclock.dt = 1 / sample_rate
@@ -35,7 +36,6 @@ left_delay = -0.5 * max_delay * sin(phase_shift) : second
 
 dthresh/dt = (a * clip(x, 0, inf) - thresh) / tau_thresh : 1
 frequency : Hz
-rec_freq : Hz
 phase_shift : 1
 '''
 reset = '''
@@ -46,7 +46,6 @@ ears = NeuronGroup(2, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
                     name='ears', method='euler', refractory=0.5*ms)
 ears.thresh = [1, 1]
 ears.frequency = 720*Hz  # Initial frequency for the sound input  
-ears.rec_freq = ears.frequency  # Record the frequency for monitoring
 # @network_operation(dt=chrono*ms)
 # def change_freq():
 #     ears.frequency *= 1.2 # Increment frequency for demonstration
@@ -72,34 +71,32 @@ synapses.delay['i==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
 tau_radar = 1 * ms  # Time constant for the radar
 
 eqs_radar = '''
-dv/dt = -v / tau_radar : 1
+dv/dt = -v / (0.25*second): 1
 '''
 
 
 radar = NeuronGroup(num_neurons, eqs_radar, method='euler', name='radar')
-radar_synapses = Synapses(neurons, radar, on_pre='v += 100')
+radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
 radar_synapses.connect(condition='j == i')
 
 
 res = SpikeMonitor(ears)
 spikes = SpikeMonitor(neurons)
 x_ears = StateMonitor(ears, 'x', record=True)
+sound_monitor = StateMonitor(ears, 'sound', record=True)
 state_rad = StateMonitor(radar, 'v', record=True)
 th_ears = StateMonitor(ears, 'thresh', record=True)
 run(5* second, report='text')
 
-tot = np.sum(state_rad.v, axis=0)
+print("Right shape:", sound_monitor.sound.shape)
+
+sinus = sound_monitor.sound[1] - sound_monitor.sound[0]  # Difference between left and right ear sounds
+prob = softmax(state_rad.v, axis=0)
 deg = np.linspace(0, 180, num_neurons)
-deg_coeff = state_rad.v.T*deg
-#direction = np.mean(deg_coeff, axis=1)
-direction = []
-for i in range (len(deg_coeff)):
-    dir_tmp = []
-    for j in range(num_neurons):
-        dir_tmp.append(deg_coeff[i][j] / (tot[i]+1e-99))  
-    direction.append(dir_tmp)
-dir_final = np.sum(np.array(direction), axis=1)
-#direction = (deg_coeff.T.dot(1/(tot + 1e-99)))
+direction = np.dot(prob.T, deg)  # Weighted average of directions
+
+
+print("Direction shape:", direction.shape)
 # Plotting the results
 plt.figure(figsize=(18, 16))
 
@@ -129,7 +126,8 @@ plt.ylabel('Threshold value')
 plt.legend()
 
 plt.subplot(4, 1, 4)
-plt.plot(state_rad.t / ms, dir_final, label='Radar Position', color='green')
+plt.plot(state_rad.t / ms, direction, label='Radar Position', color='green')
+#plt.plot(state_rad.t / ms, sinus, label='Radar Probability', color='orange')
 plt.title('Spike Times of Neurons')
 plt.xlabel('Time (ms)')
 plt.ylabel('Neuron Index')
