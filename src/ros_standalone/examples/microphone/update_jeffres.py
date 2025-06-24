@@ -18,12 +18,11 @@ tau = 0.2*ms
 # Thresholds
 a = 1
 p = 1.5
-tau_thresh = 5*ms
-lam = 0.5
+lam = 0.7
 # Sin wave input parameters
 amplitude = 32  # Amplitude for 16-bit audio
 chrono = 50
-max_delay = 0.2/343 * second
+max_delay = 0.15/343 * second
 eqs_ears = '''
 dx/dt = (input - x)/tau_ear : 1 (unless refractory)
 input = 3*clip(sound, 0, inf)**(1/3) : 1
@@ -37,20 +36,26 @@ left_delay = -0.5 * max_delay * sin(phase_shift) : second
 dthresh/dt = (a * clip(x, 0, inf) - thresh) / tau_thresh : 1
 frequency : Hz
 phase_shift : 1
+reset_time : second
+tau_thresh : second
 '''
 reset = '''
-thresh = p * thresh + lam * (x - thresh)
-x = 0
+thresh = p * thresh + lam * x
+tau_thresh = 1* (t - reset_time)
+reset_time = t
+
 '''
 ears = NeuronGroup(2, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
-                    name='ears', method='euler', refractory=0.5*ms)
+                    name='ears', method='euler', refractory=0*ms)
 ears.thresh = [1, 1]
-ears.frequency = 720*Hz  # Initial frequency for the sound input  
+ears.reset_time = [0*second, 0*second]  # Initialize reset time for both ears
+ears.tau_thresh = [5*ms, 5*ms]  # Initialize tau_thresh for both ears
+ears.frequency = 2000*Hz  # Initial frequency for the sound input  
 # @network_operation(dt=chrono*ms)
 # def change_freq():
 #     ears.frequency *= 1.2 # Increment frequency for demonstration
 
-@network_operation(dt=chrono*10*ms)
+@network_operation(dt=chrono*ms)
 def change_phase():
     ears.phase_shift += 0.1 * np.pi  # Increment phase shift for demonstration
 eqs_neurons = '''
@@ -65,7 +70,7 @@ synapses.connect()
 synapses.delay['i==0'] = '(1.0*j)/(num_neurons-1)*1.1*max_delay'
 synapses.delay['i==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
 
-#wta = Synapses(neurons, neurons, on_pre='v -= 0.65')  
+#wta = Synapses(neurons, neurons, on_pre='v -= 0.95')  
 #wta.connect(condition='i != j') 
 
 tau_radar = 1 * ms  # Time constant for the radar
@@ -86,7 +91,7 @@ x_ears = StateMonitor(ears, 'x', record=True)
 sound_monitor = StateMonitor(ears, 'sound', record=True)
 state_rad = StateMonitor(radar, 'v', record=True)
 th_ears = StateMonitor(ears, 'thresh', record=True)
-run(5* second, report='text')
+run(1* second, report='text')
 
 print("Right shape:", sound_monitor.sound.shape)
 
@@ -97,42 +102,58 @@ direction = np.dot(prob.T, deg)  # Weighted average of directions
 
 
 print("Direction shape:", direction.shape)
+
 # Plotting the results
 plt.figure(figsize=(18, 16))
 
-plt.subplot(4, 1, 1)
-plt.plot((res.t[res.i == 1] / ms)%chrono, (res.t[res.i == 1] / ms) // chrono, '.k')
-plt.ylabel('Trial')
-
+# Subplot 1: Spike times - Neuron index 1
 plt.subplot(4, 2, 1)
-plt.plot((res.t[res.i == 0] / ms)%chrono, (res.t[res.i == 0] / ms) // chrono, '.r')
-plt.title('Spike Times of Ears')
-plt.xlabel('Time (ms)')
+plt.plot((res.t[res.i == 1] / ms) % chrono, (res.t[res.i == 1] / ms) // chrono, '.k')
+plt.title('Spike Times (Neuron 1)', fontsize=14)
+plt.ylabel('Trial', fontsize=12)
+plt.xlabel('Time within trial (ms)', fontsize=12)
+plt.grid(True)
 
+# Subplot 2: Spike times - Neuron index 0
+plt.subplot(4, 2, 2)
+plt.plot((res.t[res.i == 0] / ms) % chrono, (res.t[res.i == 0] / ms) // chrono, '.r')
+plt.title('Spike Times of Ears (Neuron 0)', fontsize=14)
+plt.ylabel('Trial', fontsize=12)
+plt.xlabel('Time within trial (ms)', fontsize=12)
+plt.grid(True)
+
+# Subplot 3: Right ear state variable and threshold
 plt.subplot(4, 1, 2)
-plt.plot(x_ears.t / ms, x_ears.x[1], label='Right Ear', color='blue')
-plt.plot(th_ears.t / ms, th_ears.thresh[1], label='Right Ear Threshold', color='red')
-plt.title('Ears State Variable x')
-plt.xlabel('Time (ms)')
-plt.ylabel('x value')
-plt.legend()
+plt.plot(x_ears.t / ms, x_ears.x[1], label='Right Ear (x)', color='navy', linewidth=1.5)
+plt.plot(th_ears.t / ms, th_ears.thresh[1], label='Threshold (Right)', color='crimson', linestyle='--', linewidth=1.5)
+plt.title('Right Ear: State Variable and Threshold', fontsize=14)
+plt.xlabel('Time (ms)', fontsize=12)
+plt.ylabel('Value', fontsize=12)
+plt.legend(fontsize=10)
+plt.grid(True)
 
+# Subplot 4: Left ear state variable and threshold
 plt.subplot(4, 1, 3)
-plt.plot(x_ears.t / ms, x_ears.x[0], label='Left Ear', color='blue')
-plt.plot(th_ears.t / ms, th_ears.thresh[0], label='Left Ear Threshold', color='red')
-plt.title('Ears Threshold')
-plt.xlabel('Time (ms)')
-plt.ylabel('Threshold value')
-plt.legend()
+plt.plot(x_ears.t / ms, x_ears.x[0], label='Left Ear (x)', color='darkcyan', linewidth=1.5)
+plt.plot(th_ears.t / ms, th_ears.thresh[0], label='Threshold (Left)', color='darkred', linestyle='--', linewidth=1.5)
+plt.title('Left Ear: State Variable and Threshold', fontsize=14)
+plt.xlabel('Time (ms)', fontsize=12)
+plt.ylabel('Value', fontsize=12)
+plt.legend(fontsize=10)
+plt.grid(True)
 
+# Subplot 5: Radar direction
 plt.subplot(4, 1, 4)
-plt.plot(state_rad.t / ms, direction, label='Radar Position', color='green')
-#plt.plot(state_rad.t / ms, sinus, label='Radar Probability', color='orange')
-plt.title('Spike Times of Neurons')
-plt.xlabel('Time (ms)')
-plt.ylabel('Neuron Index')
+plt.plot(state_rad.t / ms, direction, label='Radar Position', color='forestgreen', linewidth=1.5)
+# plt.plot(state_rad.t / ms, sinus, label='Radar Probability', color='orange')  # Optional line
+plt.title('Radar Position Over Time', fontsize=14)
+plt.xlabel('Time (ms)', fontsize=12)
+plt.ylabel('Direction Index', fontsize=12)
+plt.legend(fontsize=10)
+plt.grid(True)
 
 plt.tight_layout()
 plt.show()
+
 
 
