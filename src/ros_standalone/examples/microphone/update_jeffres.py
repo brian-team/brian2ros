@@ -10,7 +10,7 @@ defaultclock.dt = 1 / sample_rate
 
 # Ears parameters
 tau_ear = 0.5*ms
-
+tau_thresh = 5*ms
 # Coincidence detectors
 num_neurons = 30
 tau = 0.2*ms
@@ -37,20 +37,17 @@ dthresh/dt = (a * clip(x, 0, inf) - thresh) / tau_thresh : 1
 frequency : Hz
 phase_shift : 1
 reset_time : second
-tau_thresh : second
 '''
 reset = '''
 thresh = p * thresh + lam * x
-tau_thresh = 1* (t - reset_time)
 reset_time = t
-
+x = 0
 '''
 ears = NeuronGroup(2, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
-                    name='ears', method='euler', refractory=0*ms)
+                    name='ears', method='euler', refractory=0.5*ms)
 ears.thresh = [1, 1]
 ears.reset_time = [0*second, 0*second]  # Initialize reset time for both ears
-ears.tau_thresh = [5*ms, 5*ms]  # Initialize tau_thresh for both ears
-ears.frequency = 2000*Hz  # Initial frequency for the sound input  
+ears.frequency = 900*Hz  # Initial frequency for the sound input  
 # @network_operation(dt=chrono*ms)
 # def change_freq():
 #     ears.frequency *= 1.2 # Increment frequency for demonstration
@@ -91,14 +88,13 @@ x_ears = StateMonitor(ears, 'x', record=True)
 sound_monitor = StateMonitor(ears, 'sound', record=True)
 state_rad = StateMonitor(radar, 'v', record=True)
 th_ears = StateMonitor(ears, 'thresh', record=True)
-run(1* second, report='text')
+run(5* second, report='text')
 
 print("Right shape:", sound_monitor.sound.shape)
 
-sinus = sound_monitor.sound[1] - sound_monitor.sound[0]  # Difference between left and right ear sounds
 prob = softmax(state_rad.v, axis=0)
 deg = np.linspace(0, 180, num_neurons)
-direction = np.dot(prob.T, deg)  # Weighted average of directions
+direction = np.dot(prob.T, deg)  
 
 
 print("Direction shape:", direction.shape)
