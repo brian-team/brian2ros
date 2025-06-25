@@ -5,6 +5,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import softmax
 
+"""
+A faire :
+- Adapter le code pour le robot
+- faire en sorte que la phase du signal s'adapte en fonction de la position du robot
+- Voir si un filtrage améliore le débruitage et donc les résultats
+"""
 sample_rate = 48 * kHz
 defaultclock.dt = 1 / sample_rate
 
@@ -36,17 +42,14 @@ left_delay = -0.5 * max_delay * sin(phase_shift) : second
 dthresh/dt = (a * clip(x, 0, inf) - thresh) / tau_thresh : 1
 frequency : Hz
 phase_shift : 1
-reset_time : second
 '''
 reset = '''
 thresh = p * thresh + lam * x
-reset_time = t
 x = 0
 '''
 ears = NeuronGroup(2, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
                     name='ears', method='euler', refractory=0.5*ms)
 ears.thresh = [1, 1]
-ears.reset_time = [0*second, 0*second]  # Initialize reset time for both ears
 ears.frequency = 900*Hz  # Initial frequency for the sound input  
 # @network_operation(dt=chrono*ms)
 # def change_freq():
@@ -74,30 +77,28 @@ tau_radar = 1 * ms  # Time constant for the radar
 
 eqs_radar = '''
 dv/dt = -v / (0.25*second): 1
+direction : 1
 '''
-
+@network_operation(dt=1*ms)
+def radar_detect(test):    
+    prob = softmax(radar.v)
+    deg = np.linspace(0, 180, num_neurons)
+    radar.direction = np.dot(prob, deg)
 
 radar = NeuronGroup(num_neurons, eqs_radar, method='euler', name='radar')
 radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
 radar_synapses.connect(condition='j == i')
-
-
 res = SpikeMonitor(ears)
 spikes = SpikeMonitor(neurons)
 x_ears = StateMonitor(ears, 'x', record=True)
 sound_monitor = StateMonitor(ears, 'sound', record=True)
-state_rad = StateMonitor(radar, 'v', record=True)
+state_rad = StateMonitor(radar, 'direction', record=True)
 th_ears = StateMonitor(ears, 'thresh', record=True)
 run(5* second, report='text')
 
-print("Right shape:", sound_monitor.sound.shape)
-
-prob = softmax(state_rad.v, axis=0)
-deg = np.linspace(0, 180, num_neurons)
-direction = np.dot(prob.T, deg)  
+print("Right shape:", sound_monitor.sound.shape) 
 
 
-print("Direction shape:", direction.shape)
 
 # Plotting the results
 plt.figure(figsize=(18, 16))
@@ -140,7 +141,7 @@ plt.grid(True)
 
 # Subplot 5: Radar direction
 plt.subplot(4, 1, 4)
-plt.plot(state_rad.t / ms, direction, label='Radar Position', color='forestgreen', linewidth=1.5)
+plt.plot(state_rad.t / ms, state_rad.direction[0], label='Radar Position', color='forestgreen', linewidth=1.5)
 # plt.plot(state_rad.t / ms, sinus, label='Radar Probability', color='orange')  # Optional line
 plt.title('Radar Position Over Time', fontsize=14)
 plt.xlabel('Time (ms)', fontsize=12)
