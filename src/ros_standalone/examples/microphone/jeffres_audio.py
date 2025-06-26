@@ -63,30 +63,38 @@ synapses.delay['i==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
 #wta = Synapses(neurons, neurons, on_pre='v -= 0.65')  
 #wta.connect(condition='i != j') 
 
-tau_radar = 1 * ms  # Time constant for the radar
+tau_radar = 250 * ms  # Time constant for the radar
+num_radar = 5
 
 eqs_radar = '''
-dv/dt = -v / (0.25*second): 1
-direction : 1 (shared)
+dv/dt = -v / tau_radar: 1
 '''
-@network_operation(dt=defaultclock.dt)
-def radar_detect(test):    
-    #prob = softmax(radar.v)
-    #deg = np.linspace(0, 180, num_neurons)
-    radar.direction[0] += 1#np.dot(prob, deg)
 
-radar = NeuronGroup(num_neurons, eqs_radar, method='euler', name='radar')
+radar = NeuronGroup(num_radar, eqs_radar, threshold='v>1', method='euler', name='radar', reset='v=0')
 radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
-radar_synapses.connect(condition='j == i')
+radar_synapses.connect(condition='j == i//(num_neurons//num_radar)')
 
+num_direction = 1  
+tau_direction = 1 * ms  
 
-ears_spikes = SpikeMonitor(ears)
+eqs_direction = '''
+dv/dt = v / tau_direction : 1
+'''
+
+direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction')
+direction_synapses = Synapses(radar, direction, on_pre='v += 0.65 * (i - ((num_radar - 1)/2))')
+
+wheel = TwistPublisher(
+    name="wheel",
+    input={"angular.z": direction.v},
+)
+    
+ears_spikes = SpikeMonitor(radar)
 spikes = SpikeMonitor(neurons)
 # Ne peut pas etre utilise en un seul state monitor
 sound = StateMonitor(ears, 'sound', record=True)
 thresh = StateMonitor(ears, 'thresh', record=True)
 son = StateMonitor(ears, 'x', record=True)
-dir = StateMonitor(radar, 'direction', record=True)
-
+dir = StateMonitor(direction, 'v', record=True)
 get_device().publish_monitors([ears_spikes, spikes, sound, thresh, son, dir])
-run(999999 * second, report="text", report_period=1 * second)
+run(999999 * second, report="text", report_period=5 * second)
