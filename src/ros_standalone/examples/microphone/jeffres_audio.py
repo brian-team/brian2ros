@@ -74,21 +74,21 @@ radar = NeuronGroup(num_radar, eqs_radar, threshold='v>1', method='euler', name=
 radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
 radar_synapses.connect(condition='j == i//(num_neurons//num_radar)')
 
-num_direction = 1  
-tau_direction = 1 * ms  
+num_direction = 2 
+tau_direction = 2 * ms  
 
 eqs_direction = '''
-dv/dt = v / tau_direction : 1
+dv/dt = -v / tau_direction : 1
 '''
 
-direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction')
+direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction', dt=defaultclock.dt)
 direction_synapses = Synapses(radar, direction, on_pre='v += 0.65 * (i - ((num_radar - 1)/2))')
-
+direction_synapses.connect('j==0')
 wheel = TwistPublisher(
     name="wheel",
     input={"angular.z": direction.v},
 )
-    
+get_device().add_publisher(wheel)    
 ears_spikes = SpikeMonitor(radar)
 spikes = SpikeMonitor(neurons)
 # Ne peut pas etre utilise en un seul state monitor

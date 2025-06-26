@@ -179,7 +179,7 @@ class MyPlugin(Plugin):
             y = self.get_value(name_y, monitor_type)
         else:
             y = self.get_value(name_y, monitor_type)[indice]
-
+        # x,y = self.get_value(name_x,name_y,monitor_type)
         self.plot_array_2d(x,y,monitor_type,add)
         self.current_plot.append({"name": display_choice, "index": indice})
         
