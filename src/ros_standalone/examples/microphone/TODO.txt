@@ -5,10 +5,10 @@
 ---------------------------------------------------
 
 - corriger dans function.py le probleme de reshape, faire en sorte que name_x et name_y soit entré dans la meme fonction,
-puis faire un calcul du type time/y pour obtenir le nombre de neurone pour le reshape.
+puis faire un calcul du type time/y pour obtenir le nombre de neurone pour le reshape.  DONE
 
 - dans radar de jeffres_audio.py, faire une variable qui ira dans angular.z qui aura pour but de suivre v, cela premet de lisser la vitesse
-angulaire et d'obtenirun résultat moins violent.
+angulaire et d'obtenir un résultat moins violent.
 
 - faire en sorte que lorsqu'il y a une source frontale au robot, le radar inhibe les autres valeurs plutot que de ne rien faire,
 envisager de faire un direction avec deux neurones (droite gauche) pour leur envoyer des valeurs negative lorsque source frontale et les soustraires pour angular.z

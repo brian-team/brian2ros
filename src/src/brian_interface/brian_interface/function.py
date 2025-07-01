@@ -163,23 +163,23 @@ class MyPlugin(Plugin):
     def display(self,add=False):
         display_choice = self.ui_results.comboBox.currentText()
         indice = self.ui_results.textInput.text()
-        
-        try:
-            indice = int(indice)
-        except ValueError:
-            print("\033[31m ❌ Invalid index, please enter a valid integer \033[0m")
-            return
-        
+
         name_x = self.monitors_name[display_choice]["x"]
         name_y = self.monitors_name[display_choice]["y"]
         monitor_type = self.monitors_name[display_choice]["type"]
 
-        x = self.get_value(name_x, 'time')
-        if monitor_type == "spikemonitor":
-            y = self.get_value(name_y, monitor_type)
-        else:
-            y = self.get_value(name_y, monitor_type)[indice]
-        # x,y = self.get_value(name_x,name_y,monitor_type)
+        try:
+            if monitor_type == "spikemonitor":
+                # For spikemonitor, we don't need an index
+                indice = None
+            else:
+                indice = int(indice)
+        except ValueError:
+            print("\033[31m ❌ Invalid index, please enter a valid integer \033[0m")
+            return
+        
+        x,y = self.get_value(name_x, name_y, monitor_type, indice)
+
         self.plot_array_2d(x,y,monitor_type,add)
         self.current_plot.append({"name": display_choice, "index": indice})
         
@@ -213,30 +213,35 @@ class MyPlugin(Plugin):
 
         return res
             
-    def get_value(self, fname, monitor_type):
-        
-        with open(fname, "rb") as f:
+    def get_value(self, fname_x, fname_y, monitor_type, indice):
+
+        with open(fname_x, "rb") as f_x:
+            data_x = np.fromfile(f_x, dtype=np.float64)
+
+        with open(fname_y, "rb") as f_y:
             if monitor_type == "spikemonitor":
                 # For spikemonitor, we read the data as int32
-                data = np.fromfile(f, dtype=np.int32)
+                data_y = np.fromfile(f_y, dtype=np.int32)
                 resh = False  # Spikemonitor data is not reshaped
             elif monitor_type == "ratemonitor":
                 # For ratemonitor, we read the data as float64
-                data = np.fromfile(f, dtype=np.float64)
+                data_y = np.fromfile(f_y, dtype=np.float64)
                 resh = False  # Ratemonitor data is not reshaped
             elif monitor_type == "statemonitor":
                 # For statemonitor, we read the data as float64
-                data = np.fromfile(f, dtype=np.float64)
+                data_y = np.fromfile(f_y, dtype=np.float64)
                 resh = True  # Statemonitor data is reshaped to 2D
-            elif monitor_type == "time":
-                # For time, we read the data as float64
-                data = np.fromfile(f, dtype=np.float64)
-                resh = False  # Time data is not reshaped
             else:
                 raise ValueError(f"Unknown monitor type: {monitor_type}")
+            
         if resh:
-            data = data.reshape(-1, 2).T
-        return data
+            resh_value = len(data_y) // len(data_x)
+            data_y = data_y.reshape(-1, resh_value).T
+
+        if indice is not None:
+            return data_x, data_y[indice]
+        else:
+            return data_x, data_y
 
     def plot_array_2d(self, x, y, monitor_type,add=False):
         if not add:
