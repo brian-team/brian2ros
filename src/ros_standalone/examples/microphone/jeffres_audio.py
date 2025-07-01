@@ -74,21 +74,26 @@ radar = NeuronGroup(num_radar, eqs_radar, threshold='v>1', method='euler', name=
 radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
 radar_synapses.connect(condition='j == i//(num_neurons//num_radar)')
 
-num_direction = 2 
+num_direction = 2 # Left and Right
 tau_direction = 2 * ms  
+tau_target = 50 * ms
 
 eqs_direction = '''
-dv/dt = -v / tau_direction : 1
+dv/dt = clip(-v, -1.82, 1.82) / tau_direction : 1
+dvel/dt = (v - vel) / tau_target : 1
 '''
 
 direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction', dt=defaultclock.dt)
-direction_synapses = Synapses(radar, direction, on_pre='v += 0.65 * (i - ((num_radar - 1)/2))')
-direction_synapses.connect('j==0')
+direction_synapses = Synapses(radar, direction, on_pre='v += 1.6 * sin(1.82348*i + 1.06544) + 0.6')
+direction_synapses.connect(i=[0,1,2], j=0)
+direction_synapses.connect(i=[2,3,4], j=1)
+
 wheel = TwistPublisher(
     name="wheel",
-    input={"angular.z": direction.v},
+    input={"angular.z": direction.vel[0] - direction.vel[1]},
 )
-get_device().add_publisher(wheel)    
+get_device().add_publisher(wheel) 
+   
 ears_spikes = SpikeMonitor(radar)
 spikes = SpikeMonitor(neurons)
 # Ne peut pas etre utilise en un seul state monitor
@@ -96,5 +101,6 @@ sound = StateMonitor(ears, 'sound', record=True)
 thresh = StateMonitor(ears, 'thresh', record=True)
 son = StateMonitor(ears, 'x', record=True)
 dir = StateMonitor(direction, 'v', record=True)
-get_device().publish_monitors([ears_spikes, spikes, sound, thresh, son, dir])
-run(999999 * second, report="text", report_period=5 * second)
+dir_vel = StateMonitor(direction, 'vel', record=True)
+get_device().publish_monitors([ears_spikes, spikes, sound, thresh, son, dir, dir_vel])
+run(10 * second, report="text", report_period=5 * second)
