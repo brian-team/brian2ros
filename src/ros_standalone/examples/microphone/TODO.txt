@@ -17,8 +17,23 @@ envisager de faire un direction avec deux neurones (droite gauche) pour leur env
 
 ---------------------------------------------------
 
+- Comparer les résultats avec ou sans filtrage (prendre des screens pour les mettres dans le rapport)
+
+- Faire la cochlée, mettre plusieurs bande passante en essayant d'être le plus proche biologiquement 
+(on ne va que jusqu'a 1900 Hz mais on peut quand meme filtrer au dessus)
+
+- Faire un schéma de fonctionnement de Brian2ROS (pour pas se perdre quand il y a une erreur et pour le rapport)
+
+- augmenter le nombre de neurone de radar dans jeffres_audio.py
+
+- ajouter l'adaptation de la différence de temps en fonction de la position angulaire du robot
+
+---------------------------------------------------
+
 Si rien a faire :
 
 - Corriger le message d'erreur 
 
 - Réparer le tableau de modification de variable
+
+- Réparer l'horloge de l'interface

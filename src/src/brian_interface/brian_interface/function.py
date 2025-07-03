@@ -277,12 +277,10 @@ class MyPlugin(Plugin):
         self.ui_results.plot.ax.clear()
         for plot in self.current_plot:
             name = plot["name"]
-            index = plot["index"]
-            x = self.get_value(self.monitors_name[name]["x"], 'time')
             if self.monitors_name[name]["type"] == "spikemonitor":
-                y = self.get_value(self.monitors_name[name]["y"], self.monitors_name[name]["type"])
+                x,y = self.get_value(self.monitors_name[name]["x"],self.monitors_name[name]["y"], self.monitors_name[name]["type"], None)
             else:
-                y = self.get_value(self.monitors_name[name]["y"], self.monitors_name[name]["type"])[index]
+                x,y = self.get_value(self.monitors_name[name]["x"], self.monitors_name[name]["y"], self.monitors_name[name]["type"], plot["index"])
             self.plot_array_2d(x, y, self.monitors_name[name]["type"], add=True)
         self.ui_results.plot.figure.tight_layout()
         self.ui_results.plot.draw()

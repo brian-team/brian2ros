@@ -32,9 +32,31 @@ a = 1
 p = 1.5
 tau_thresh = 5*ms
 
+# Filter parameters
+f_center = 440 * Hz  
+BW = 1
+fs = 48000 * Hz  
+tau_filter = 1*second
+w0 = (2*np.pi * f_center) / fs
+alpha = np.sin(w0) * np.sinh((np.log(2)/2) * BW * (w0 / np.sin(w0)))
+
+a0 = 1 + alpha
+b0 = (np.sin(w0) / 2) / a0
+b1 = 0
+b2 = (-np.sin(w0) / 2) / a0
+a1 = (-2 * np.cos(w0)) / a0
+a2 = (1 - alpha) / a0
 # Ears and sound motion around the head (constant angular speed)
 eqs_ears = '''
-sound = audio(t,i) : 1 (constant over dt)
+xn = audio(t,i) : 1 (constant over dt)
+
+sound = b0 * xn + b1 * xn1 + b2 * xn2 - a1 * yn1 - a2 * yn2 : 1 (constant over dt)
+yn1 : 1
+yn2 : 1
+
+xn2 : 1 
+xn1 : 1 
+
 dx/dt = (sound - x)/tau_ear : 1 (unless refractory)
 dthresh/dt = (a * clip(x, 0, inf) - thresh) / tau_thresh : 1
 '''
@@ -46,6 +68,8 @@ thresh = p * thresh + lam * x
 
 ears = NeuronGroup(2, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
                     name='ears', method='euler',refractory=0.5*ms)
+ears.run_regularly('xn2 = xn1 ; xn1 = xn ; yn2 = yn1 ; yn1 = sound', dt=defaultclock.dt, when='end')
+
 
 ears.thresh = [1, 1]
 eqs_neurons = '''
@@ -94,6 +118,12 @@ wheel = TwistPublisher(
 )
 get_device().add_publisher(wheel) 
    
+s_yn1 = StateMonitor(ears, 'yn1', record=True)
+s_yn2 = StateMonitor(ears, 'yn2', record=True)
+s_xn1 = StateMonitor(ears, 'xn1', record=True)
+s_xn2 = StateMonitor(ears, 'xn2', record=True)
+s_xn = StateMonitor(ears, 'xn', record=True)
+
 ears_spikes = SpikeMonitor(radar)
 spikes = SpikeMonitor(neurons)
 # Ne peut pas etre utilise en un seul state monitor
@@ -102,5 +132,5 @@ thresh = StateMonitor(ears, 'thresh', record=True)
 son = StateMonitor(ears, 'x', record=True)
 dir = StateMonitor(direction, 'v', record=True)
 dir_vel = StateMonitor(direction, 'vel', record=True)
-get_device().publish_monitors([ears_spikes, spikes, sound, thresh, son, dir, dir_vel])
-run(10 * second, report="text", report_period=5 * second)
+get_device().publish_monitors([ears_spikes, spikes, sound, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn])
+run(60 * second, report="text", report_period=5 * second)
