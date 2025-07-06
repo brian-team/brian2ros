@@ -33,12 +33,22 @@ p = 1.5
 tau_thresh = 5*ms
 
 # Filter parameters
-f_center = 440 * Hz  
+
+f_min = 100 * Hz
+f_max = 2500 * Hz
+nb_band = 16
+
 BW = 1
 fs = 48000 * Hz  
-tau_filter = 1*second
-w0 = (2*np.pi * f_center) / fs
-alpha = np.sin(w0) * np.sinh((np.log(2)/2) * BW * (w0 / np.sin(w0)))
+
+
+# Ears and sound motion around the head (constant angular speed)
+eqs_ears = '''
+f_center = geomspace(f_min, f_max, nb_band)[i % nb_band] * Hz : Hz
+xn = audio(t, i // nb_band) : 1 (constant over dt)
+
+w0 = (2*np.pi * f_center) / fs : 1
+alpha = np.sin(w0) * np.sinh((np.log(2)/2) * BW * (w0 / np.sin(w0))) : 1
 
 a0 = 1 + alpha
 b0 = (np.sin(w0) / 2) / a0
@@ -46,18 +56,16 @@ b1 = 0
 b2 = (-np.sin(w0) / 2) / a0
 a1 = (-2 * np.cos(w0)) / a0
 a2 = (1 - alpha) / a0
-# Ears and sound motion around the head (constant angular speed)
-eqs_ears = '''
-xn = audio(t,i) : 1 (constant over dt)
 
-sound = b0 * xn + b1 * xn1 + b2 * xn2 - a1 * yn1 - a2 * yn2 : 1 (constant over dt)
+yn = b0 * xn + b1 * xn1 + b2 * xn2 - a1 * yn1 - a2 * yn2 : 1 (constant over dt)
+
 yn1 : 1
 yn2 : 1
 
 xn2 : 1 
 xn1 : 1 
 
-dx/dt = (sound - x)/tau_ear : 1 (unless refractory)
+dx/dt = (yn - x)/tau_ear : 1 (unless refractory)
 dthresh/dt = (a * clip(x, 0, inf) - thresh) / tau_thresh : 1
 '''
 
@@ -66,23 +74,24 @@ x = 0
 thresh = p * thresh + lam * x
 '''
 
-ears = NeuronGroup(2, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
+ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
                     name='ears', method='euler',refractory=0.5*ms)
 ears.run_regularly('xn2 = xn1 ; xn1 = xn ; yn2 = yn1 ; yn1 = sound', dt=defaultclock.dt, when='end')
 
 
-ears.thresh = [1, 1]
+ears.thresh = np.ones(2 * nb_band)  # Initialize thresholds
+
 eqs_neurons = '''
 dv/dt = -v / tau : 1
 '''
-neurons = NeuronGroup(num_neurons, eqs_neurons, threshold='v>1',
+neurons = NeuronGroup(num_neurons * nb_band, eqs_neurons, threshold='v>1',
                        reset='v=0', name='neurons', method='euler',refractory=10*ms)
 # Connect ears to neurons
 synapses = Synapses(ears, neurons, on_pre='v += .65')
-synapses.connect()
+synapses.connect('i % nb_band == j // num_neurons')  
 
-synapses.delay['i==0'] = '(1.0*j)/(num_neurons-1)*1.1*max_delay'
-synapses.delay['i==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
+synapses.delay['i//nb_band==0'] = '(1.0*j)/(num_neurons-1)*1.1*max_delay'
+synapses.delay['i//nb_band==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
 
 #wta = Synapses(neurons, neurons, on_pre='v -= 0.65')  
 #wta.connect(condition='i != j') 
