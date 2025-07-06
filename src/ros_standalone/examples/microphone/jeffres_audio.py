@@ -44,18 +44,18 @@ fs = 48000 * Hz
 
 # Ears and sound motion around the head (constant angular speed)
 eqs_ears = '''
-f_center = geomspace(f_min, f_max, nb_band)[i % nb_band] * Hz : Hz
+f_center = geomspace(f_min, f_max, nb_band)(i % nb_band) * Hz : Hz
 xn = audio(t, i // nb_band) : 1 (constant over dt)
 
 w0 = (2*np.pi * f_center) / fs : 1
 alpha = np.sin(w0) * np.sinh((np.log(2)/2) * BW * (w0 / np.sin(w0))) : 1
 
-a0 = 1 + alpha
-b0 = (np.sin(w0) / 2) / a0
-b1 = 0
-b2 = (-np.sin(w0) / 2) / a0
-a1 = (-2 * np.cos(w0)) / a0
-a2 = (1 - alpha) / a0
+a0 = 1 + alpha : 1
+b0 = (np.sin(w0) / 2) / a0 : 1
+b1 = 0 : 1
+b2 = (-np.sin(w0) / 2) / a0 : 1
+a1 = (-2 * np.cos(w0)) / a0 : 1
+a2 = (1 - alpha) / a0 : 1
 
 yn = b0 * xn + b1 * xn1 + b2 * xn2 - a1 * yn1 - a2 * yn2 : 1 (constant over dt)
 
@@ -103,9 +103,16 @@ eqs_radar = '''
 dv/dt = -v / tau_radar: 1
 '''
 
-radar = NeuronGroup(num_radar, eqs_radar, threshold='v>1', method='euler', name='radar', reset='v=0')
+radar = NeuronGroup(num_radar * nb_band, eqs_radar, threshold='v>1', method='euler', name='radar', reset='v=0')
 radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
 radar_synapses.connect(condition='j == i//(num_neurons//num_radar)')
+
+eqs_combi = '''
+dv/dt = -v / tau_radar : 1
+'''
+combination = NeuronGroup(num_radar, eqs_combi, threshold='v>1', reset='v=0', method='euler', name='combination')
+combination_synapses = Synapses(radar, combination, on_pre='v += 0.65')
+combination_synapses.connect('i == j % num_radar') 
 
 num_direction = 2 # Left and Right
 tau_direction = 2 * ms  
@@ -117,7 +124,7 @@ dvel/dt = (v - vel) / tau_target : 1
 '''
 
 direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction', dt=defaultclock.dt)
-direction_synapses = Synapses(radar, direction, on_pre='v += 1.6 * sin(1.82348*i + 1.06544) + 0.6')
+direction_synapses = Synapses(combination, direction, on_pre='v += 1.6 * sin(1.82348*i + 1.06544) + 0.6')
 direction_synapses.connect(i=[0,1,2], j=0)
 direction_synapses.connect(i=[2,3,4], j=1)
 
