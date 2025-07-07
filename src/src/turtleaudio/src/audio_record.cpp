@@ -163,7 +163,7 @@ private:
   void get_sample_sin() 
   {
     constexpr double frequency = 440.0;
-    constexpr double amplitude = 30.0;
+    constexpr double amplitude = 32767.0 / 2; // Max amplitude for 16-bit audio
     constexpr double sound_speed = 343.0;
     constexpr double distance = 0.2;
     constexpr double max_delay = distance / sound_speed;

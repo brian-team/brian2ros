@@ -969,6 +969,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     ) % xmsg
 
                     raise RuntimeError(error_message)
+                
                 xc = os.system(
                     'cd ' + self.file_path + '/../../ && MAKEFLAGS="-j1 -l1" colcon build --executor sequential' 
                     + (' --packages-skip turtlebot3_gz brian_interface --packages-ignore turtlebot3_gz brian_interface' if not prefs.devices.ros_standalone.interface else '')

@@ -35,26 +35,25 @@ tau_thresh = 5*ms
 # Filter parameters
 
 f_min = 100 * Hz
-f_max = 2500 * Hz
+f_max = 2500 * Hz  
 nb_band = 16
 
-BW = 1
+BW = 0.1
 fs = 48000 * Hz  
-
 
 # Ears and sound motion around the head (constant angular speed)
 eqs_ears = '''
-f_center = geomspace(f_min, f_max, nb_band)(i % nb_band) * Hz : Hz
+f_center = f_min * (f_max / f_min) ** ((i%nb_band) / (nb_band - 1)) : Hz # Logarithmic spacing of frequencies
 xn = audio(t, i // nb_band) : 1 (constant over dt)
 
-w0 = (2*np.pi * f_center) / fs : 1
-alpha = np.sin(w0) * np.sinh((np.log(2)/2) * BW * (w0 / np.sin(w0))) : 1
+w0 = (2*pi * f_center) / fs : 1
+alpha = sin(w0) * sinh((log(2)/2) * BW * (w0 / sin(w0))) : 1
 
 a0 = 1 + alpha : 1
-b0 = (np.sin(w0) / 2) / a0 : 1
+b0 = (sin(w0) / 2) / a0 : 1
 b1 = 0 : 1
-b2 = (-np.sin(w0) / 2) / a0 : 1
-a1 = (-2 * np.cos(w0)) / a0 : 1
+b2 = (-sin(w0) / 2) / a0 : 1
+a1 = (-2 * cos(w0)) / a0 : 1
 a2 = (1 - alpha) / a0 : 1
 
 yn = b0 * xn + b1 * xn1 + b2 * xn2 - a1 * yn1 - a2 * yn2 : 1 (constant over dt)
@@ -74,12 +73,12 @@ x = 0
 thresh = p * thresh + lam * x
 '''
 
-ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>0.05',reset=reset,
+ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>5000',reset=reset,
                     name='ears', method='euler',refractory=0.5*ms)
-ears.run_regularly('xn2 = xn1 ; xn1 = xn ; yn2 = yn1 ; yn1 = sound', dt=defaultclock.dt, when='end')
+ears.run_regularly('xn2 = xn1 ; xn1 = xn ; yn2 = yn1 ; yn1 = yn', dt=defaultclock.dt, when='end')
 
 
-ears.thresh = np.ones(2 * nb_band)  # Initialize thresholds
+ears.thresh = np.ones(2 * nb_band) * 5000  # Initialize thresholds
 
 eqs_neurons = '''
 dv/dt = -v / tau : 1
@@ -111,7 +110,7 @@ eqs_combi = '''
 dv/dt = -v / tau_radar : 1
 '''
 combination = NeuronGroup(num_radar, eqs_combi, threshold='v>1', reset='v=0', method='euler', name='combination')
-combination_synapses = Synapses(radar, combination, on_pre='v += 0.65')
+combination_synapses = Synapses(radar, combination, on_pre='v += 0.30')
 combination_synapses.connect('i == j % num_radar') 
 
 num_direction = 2 # Left and Right
@@ -140,13 +139,19 @@ s_xn1 = StateMonitor(ears, 'xn1', record=True)
 s_xn2 = StateMonitor(ears, 'xn2', record=True)
 s_xn = StateMonitor(ears, 'xn', record=True)
 
-ears_spikes = SpikeMonitor(radar)
+radar_spikes = SpikeMonitor(radar)
 spikes = SpikeMonitor(neurons)
+combi = SpikeMonitor(combination)
+ears_spikes = SpikeMonitor(ears)
+
 # Ne peut pas etre utilise en un seul state monitor
-sound = StateMonitor(ears, 'sound', record=True)
+sound = StateMonitor(ears, 'yn', record=True)
+combi_state = StateMonitor(combination, 'v', record=True)
+radar_state = StateMonitor(radar, 'v', record=True)
 thresh = StateMonitor(ears, 'thresh', record=True)
 son = StateMonitor(ears, 'x', record=True)
 dir = StateMonitor(direction, 'v', record=True)
 dir_vel = StateMonitor(direction, 'vel', record=True)
-get_device().publish_monitors([ears_spikes, spikes, sound, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn])
+
+get_device().publish_monitors([ears_spikes, spikes, sound, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, combi_state, radar_state, combi, radar_spikes])
 run(60 * second, report="text", report_period=5 * second)
