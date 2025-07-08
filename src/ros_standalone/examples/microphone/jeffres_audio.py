@@ -110,7 +110,7 @@ eqs_combi = '''
 dv/dt = -v / tau_radar : 1
 '''
 combination = NeuronGroup(num_radar, eqs_combi, threshold='v>1', reset='v=0', method='euler', name='combination')
-combination_synapses = Synapses(radar, combination, on_pre='v += 0.30')
+combination_synapses = Synapses(radar, combination, on_pre='v += 0.65')
 combination_synapses.connect('i == j % num_radar') 
 
 num_direction = 2 # Left and Right

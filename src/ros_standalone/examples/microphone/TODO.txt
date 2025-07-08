@@ -20,7 +20,7 @@ envisager de faire un direction avec deux neurones (droite gauche) pour leur env
 - Comparer les résultats avec ou sans filtrage (prendre des screens pour les mettres dans le rapport)
 
 - Faire la cochlée, mettre plusieurs bande passante en essayant d'être le plus proche biologiquement 
-(on ne va que jusqu'a 1900 Hz mais on peut quand meme filtrer au dessus)
+(on ne va que jusqu'a 1900 Hz mais on peut quand meme filtrer au dessus) DONE
 
 - Faire un schéma de fonctionnement de Brian2ROS (pour pas se perdre quand il y a une erreur et pour le rapport)
 
