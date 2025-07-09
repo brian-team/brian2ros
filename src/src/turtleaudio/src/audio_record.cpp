@@ -7,6 +7,7 @@
 #include "turtleaudio/msg/stereo_audio_block.hpp"
 #include <time.h>
 #include "std_msgs/msg/header.hpp"
+#include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/qos.hpp"
 #include <sndfile.h>
 
@@ -16,6 +17,7 @@
 
 using namespace std::chrono_literals;
 using turtleaudio::msg::StereoAudioBlock;
+using std::placeholders::_1;
 
 PaStream *_init_input_stream()
 {
@@ -73,14 +75,8 @@ AudioRecorder(const std::string &wav_path = "", int max_frames = 20000)
     auto seconds = static_cast<double>(BUFFER_SIZE) / SAMPLE_RATE;
     auto period = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>(seconds));
 
-    if (!wav_path_.empty() && wav_path_ != "sin" && wav_path_ != "portaudio") 
-    {
-      RCLCPP_INFO(this->get_logger(), "Read and publish WAV file : %s", wav_path_.c_str());
-      timer = this->create_wall_timer(
-          period, std::bind(&AudioRecorder::get_sample_from_wav, this));
-      open_wav_file();
-    } 
-    else if (wav_path_ == "sin") 
+
+    if (wav_path_ == "sin") 
     {
       RCLCPP_INFO(this->get_logger(), "Sinusoidal audio input for testing.");
       timer = this->create_wall_timer(
@@ -92,6 +88,22 @@ AudioRecorder(const std::string &wav_path = "", int max_frames = 20000)
       timer = this->create_wall_timer(
           period, std::bind(&AudioRecorder::get_sample, this));
     }
+    else if (wav_path_ == "sin_gz")
+    {
+      pos_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
+        "odom", qos_audio_realtime, std::bind(&AudioRecorder::odom_callback, this, _1)); 
+
+      RCLCPP_INFO(this->get_logger(), "Sinusoidal audio input for testing with gz.");
+      timer_sin = this->create_wall_timer(
+          period, std::bind(&AudioRecorder::get_sample_sin, this));
+    }    
+    else if (!wav_path_.empty()) 
+    {
+      RCLCPP_INFO(this->get_logger(), "Read and publish WAV file : %s", wav_path_.c_str());
+      timer = this->create_wall_timer(
+          period, std::bind(&AudioRecorder::get_sample_from_wav, this));
+      open_wav_file();
+    } 
     else 
     {
       RCLCPP_ERROR(this->get_logger(), "No valid input source specified. Use a WAV file path or 'sin' for sinusoidal input or 'portaudio' for real-time audio input.");
@@ -156,6 +168,18 @@ private:
     frame_count++;
   }
 
+  void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
+  {
+    double z = msg->pose.pose.orientation.z;
+    double w = msg->pose.pose.orientation.w;
+    double rad_z = atan2(2*(w*z), 1 - 2*(z*z));
+    phase_shift = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
+    RCLCPP_INFO(this->get_logger(), "Orientation of sound source: %f rad", rad_z * 180 / M_PI);
+    RCLCPP_INFO(this->get_logger(), "Phase shift: %f rad", phase_shift * 180 / M_PI);
+    // Update the source orientation based on the current orientation of the sound source
+  }
+  double source_orientation = M_PI / 2; // Initial orientation of the sound source
+
   // This function generates a sine wave signal for testing purposes.
   // It simulates a sound wave with a frequency of 440 Hz (A4 note) and a phase shift.
   // The left and right channels are delayed by a small amount to simulate stereo sound.
@@ -182,7 +206,8 @@ private:
     }
 
     if (frame_count_sin % 100 == 0)
-      RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count_sin);
+      //RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count_sin);
+      RCLCPP_INFO(this->get_logger(), "Phase shift in get_sample : %f", phase_shift * 180 / M_PI);
 
     if (frame_count_sin >= max_frames_)
     {
@@ -246,6 +271,7 @@ private:
   std::vector<int16_t> buffer;
   rclcpp::TimerBase::SharedPtr timer;
   rclcpp::Publisher<StereoAudioBlock>::SharedPtr publisher;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr pos_subscriber;
   int frame_count = 0;
 
   rclcpp::TimerBase::SharedPtr timer_sin;

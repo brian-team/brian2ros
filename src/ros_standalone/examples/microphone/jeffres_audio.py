@@ -111,7 +111,7 @@ dv/dt = -v / tau_radar : 1
 '''
 combination = NeuronGroup(num_radar, eqs_combi, threshold='v>1', reset='v=0', method='euler', name='combination')
 combination_synapses = Synapses(radar, combination, on_pre='v += 0.65')
-combination_synapses.connect('i == j % num_radar') 
+combination_synapses.connect('j == i // nb_band') 
 
 num_direction = 2 # Left and Right
 tau_direction = 2 * ms  
@@ -127,9 +127,18 @@ direction_synapses = Synapses(combination, direction, on_pre='v += 1.6 * sin(1.8
 direction_synapses.connect(i=[0,1,2], j=0)
 direction_synapses.connect(i=[2,3,4], j=1)
 
+eqs_rad = '''
+vel_left : 1 (linked)
+vel_right : 1 (linked)
+vel_diff = vel_left - vel_right : 1 (constant over dt)
+'''
+radian = NeuronGroup(1, eqs_rad)
+radian.vel_left = linked_var(direction, 'vel', [0])
+radian.vel_right = linked_var(direction, 'vel', [1])
+
 wheel = TwistPublisher(
     name="wheel",
-    input={"angular.z": direction.vel[0] - direction.vel[1]},
+    input={"angular.z": radian.vel_diff},
 )
 get_device().add_publisher(wheel) 
    
