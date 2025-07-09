@@ -115,7 +115,7 @@ combination_synapses.connect('j == i // nb_band')
 
 num_direction = 2 # Left and Right
 tau_direction = 2 * ms  
-tau_target = 50 * ms
+tau_target = 200 * ms
 
 eqs_direction = '''
 dv/dt = clip(-v, -1.82, 1.82) / tau_direction : 1
@@ -123,7 +123,7 @@ dvel/dt = (v - vel) / tau_target : 1
 '''
 
 direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction', dt=defaultclock.dt)
-direction_synapses = Synapses(combination, direction, on_pre='v += 1.6 * sin(1.82348*i + 1.06544) + 0.6')
+direction_synapses = Synapses(combination, direction, on_pre='v += 3 * sin(1.82348*i + 1.06544) + 0.6')
 direction_synapses.connect(i=[0,1,2], j=0)
 direction_synapses.connect(i=[2,3,4], j=1)
 
@@ -148,10 +148,10 @@ s_xn1 = StateMonitor(ears, 'xn1', record=True)
 s_xn2 = StateMonitor(ears, 'xn2', record=True)
 s_xn = StateMonitor(ears, 'xn', record=True)
 
-radar_spikes = SpikeMonitor(radar)
-spikes = SpikeMonitor(neurons)
-combi = SpikeMonitor(combination)
-ears_spikes = SpikeMonitor(ears)
+# radar_spikes = SpikeMonitor(radar)
+# spikes = SpikeMonitor(neurons)
+# combi = SpikeMonitor(combination)
+# ears_spikes = SpikeMonitor(ears)
 
 # Ne peut pas etre utilise en un seul state monitor
 sound = StateMonitor(ears, 'yn', record=True)
@@ -161,6 +161,7 @@ thresh = StateMonitor(ears, 'thresh', record=True)
 son = StateMonitor(ears, 'x', record=True)
 dir = StateMonitor(direction, 'v', record=True)
 dir_vel = StateMonitor(direction, 'vel', record=True)
+radian_state = StateMonitor(radian, 'vel_diff', record=True)
 
-get_device().publish_monitors([ears_spikes, spikes, sound, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, combi_state, radar_state, combi, radar_spikes])
+get_device().publish_monitors([sound, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, combi_state, radar_state, radian_state])
 run(60 * second, report="text", report_period=5 * second)
