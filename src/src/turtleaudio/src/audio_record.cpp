@@ -170,16 +170,17 @@ private:
 
   void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
   {
+    change_orientation = false;
     double z = msg->pose.pose.orientation.z;
     double w = msg->pose.pose.orientation.w;
     double rad_z = atan2(2*(w*z), 1 - 2*(z*z));
-    phase_shift = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
+    orientation = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
     RCLCPP_INFO(this->get_logger(), "Orientation of sound source: %f rad", rad_z * 180 / M_PI);
-    RCLCPP_INFO(this->get_logger(), "Phase shift: %f rad", phase_shift * 180 / M_PI);
+    RCLCPP_INFO(this->get_logger(), "Phase shift: %f rad", orientation * 180 / M_PI);
     // Update the source orientation based on the current orientation of the sound source
   }
   double source_orientation = M_PI / 2; // Initial orientation of the sound source
-
+  bool change_orientation = true;
   // This function generates a sine wave signal for testing purposes.
   // It simulates a sound wave with a frequency of 440 Hz (A4 note) and a phase shift.
   // The left and right channels are delayed by a small amount to simulate stereo sound.
@@ -195,8 +196,8 @@ private:
     for (size_t i = 0; i < BUFFER_SIZE; ++i) 
     {
       double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
-      double left_delay = -0.5 * max_delay * sin(phase_shift);
-      double right_delay = 0.5 * max_delay * sin(phase_shift);
+      double left_delay = -0.5 * max_delay * sin(orientation);
+      double right_delay = 0.5 * max_delay * sin(orientation);
 
       int16_t left_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * (t - left_delay)));
       int16_t right_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * (t - right_delay)));
@@ -207,7 +208,7 @@ private:
 
     if (frame_count_sin % 100 == 0)
       //RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count_sin);
-      RCLCPP_INFO(this->get_logger(), "Phase shift in get_sample : %f", phase_shift * 180 / M_PI);
+      RCLCPP_INFO(this->get_logger(), "Phase shift in get_sample : %f", orientation * 180 / M_PI);
 
     if (frame_count_sin >= max_frames_)
     {
@@ -218,7 +219,10 @@ private:
     msg.header.frame_id = std::to_string(frame_count_sin);
     msg.header.stamp = this->now();
     frame_count_sin++;
-    phase_shift += M_PI / 250;
+    if (change_orientation)
+    {
+    orientation += M_PI / 250; // Increment the phase shift for the next sample
+    }
     publisher->publish(msg);
   }
 
@@ -277,7 +281,7 @@ private:
   rclcpp::TimerBase::SharedPtr timer_sin;
   int64_t sample_index_sin = 0;
   int frame_count_sin = 0;
-  double phase_shift = 0;
+  double orientation = 0;
 
   std::string wav_path_;
   SNDFILE *sndfile_ = nullptr;

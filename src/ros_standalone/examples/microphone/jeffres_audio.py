@@ -38,7 +38,7 @@ f_min = 100 * Hz
 f_max = 2500 * Hz  
 nb_band = 16
 
-BW = 0.1
+BW = 0.2
 fs = 48000 * Hz  
 
 # Ears and sound motion around the head (constant angular speed)
@@ -134,7 +134,7 @@ direction_synapses.connect(i=[2,3,4], j=1)
 eqs_rad = '''
 vel_left : 1 (linked)
 vel_right : 1 (linked)
-vel_diff = vel_left - vel_right : 1 (constant over dt)
+veldiff = vel_left - vel_right : 1 (constant over dt)
 '''
 radian = NeuronGroup(1, eqs_rad)
 radian.vel_left = linked_var(direction, 'vel', [0])
@@ -142,7 +142,7 @@ radian.vel_right = linked_var(direction, 'vel', [1])
 
 wheel = TwistPublisher(
     name="wheel",
-    input={"angular.z": radian.vel_diff},
+    input={"angular.z": radian.veldiff},
 )
 get_device().add_publisher(wheel) 
    
@@ -152,10 +152,10 @@ s_xn1 = StateMonitor(ears, 'xn1', record=True)
 s_xn2 = StateMonitor(ears, 'xn2', record=True)
 s_xn = StateMonitor(ears, 'xn', record=True)
 
-# radar_spikes = SpikeMonitor(radar)
-# spikes = SpikeMonitor(neurons)
-# combi = SpikeMonitor(combination)
-# ears_spikes = SpikeMonitor(ears)
+radar_spikes = SpikeMonitor(radar)
+spikes = SpikeMonitor(neurons)
+combi = SpikeMonitor(combination)
+ears_spikes = SpikeMonitor(ears)
 
 # Ne peut pas etre utilise en un seul state monitor
 sound = StateMonitor(ears, 'yn', record=True)
@@ -165,7 +165,7 @@ thresh = StateMonitor(ears, 'thresh', record=True)
 son = StateMonitor(ears, 'x', record=True)
 dir = StateMonitor(direction, 'v', record=True)
 dir_vel = StateMonitor(direction, 'vel', record=True)
-radian_state = StateMonitor(radian, 'vel_diff', record=True)
+radian_state = StateMonitor(radian, 'veldiff', record=True)
 
-get_device().publish_monitors([sound, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, combi_state, radar_state, radian_state])
+get_device().publish_monitors([sound, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, combi_state, radar_state, radian_state, spikes, ears_spikes, radar_spikes, combi])
 run(60 * second, report="text", report_period=5 * second)
