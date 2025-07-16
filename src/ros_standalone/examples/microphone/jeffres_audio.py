@@ -116,17 +116,21 @@ combination_synapses.connect('j == i // nb_band')
 num_direction = 2 # Left and Right
 tau_direction = 2 * ms  
 tau_target = 200 * ms
-
+max_vel = 1.82 
 eqs_direction = '''
-dv/dt = clip(-v, -1.82, 1.82) / tau_direction : 1
+dv/dt = clip(-v, -max_vel, max_vel) / tau_direction : 1
 dvel/dt = (v - vel) / tau_target : 1
 '''
 
+alpha = 2 # acceleration factor
+a_front = 0.2 # Determines the front
+
 direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction', dt=defaultclock.dt)
-direction_synapses = Synapses(combination, direction, on_pre='v += 3 * sin(1.82348*i + 1.06544) + 0.6')
+direction_synapses = Synapses(combination, direction, on_pre='v += alpha * ((abs(i-((num_radar-1)/2))/((num_radar-1)/2))-a_front)')
 direction_synapses.connect(i=[0,1,2], j=0)
 direction_synapses.connect(i=[2,3,4], j=1)
-
+#>>> n = np.int32(nb//2 + np.rint(nb*0.2/2))
+#>>> np.linspace(0,n,n+1)
 eqs_rad = '''
 vel_left : 1 (linked)
 vel_right : 1 (linked)
