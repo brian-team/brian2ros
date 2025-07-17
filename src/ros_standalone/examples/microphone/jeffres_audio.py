@@ -95,8 +95,8 @@ synapses.delay['i//nb_band==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*m
 #wta = Synapses(neurons, neurons, on_pre='v -= 0.65')  
 #wta.connect(condition='i != j') 
 
-tau_radar = 250 * ms  # Time constant for the radar
-num_radar = 5
+tau_radar = 25 * ms  # Time constant for the radar
+num_radar = 15
 
 eqs_radar = '''
 dv/dt = -v / tau_radar: 1
@@ -115,20 +115,23 @@ combination_synapses.connect('j == i // nb_band')
 
 num_direction = 2 # Left and Right
 tau_direction = 2 * ms  
-tau_target = 200 * ms
+tau_target = 20 * ms
 max_vel = 1.82 
 eqs_direction = '''
 dv/dt = clip(-v, -max_vel, max_vel) / tau_direction : 1
 dvel/dt = (v - vel) / tau_target : 1
 '''
 
-alpha = 2 # acceleration factor
+alpha_vel = 2 # acceleration factor
 a_front = 0.2 # Determines the front
+min_front = num_radar//2 - np.floor(num_radar*a_front/2)
+max_front = (num_radar//2 + np.floor(num_radar*a_front/2)) + 1
 
 direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction', dt=defaultclock.dt)
-direction_synapses = Synapses(combination, direction, on_pre='v += alpha * ((abs(i-((num_radar-1)/2))/((num_radar-1)/2))-a_front)')
-direction_synapses.connect(i=[0,1,2], j=0)
-direction_synapses.connect(i=[2,3,4], j=1)
+direction_synapses = Synapses(combination, direction, on_pre='v += alpha_vel * ((abs(i-((num_radar-1)/2))/((num_radar-1)/2))-a_front)')
+direction_synapses.connect(i=np.arange(0,max_front,dtype=int), j=0)
+direction_synapses.connect(i=np.arange(min_front,num_radar,dtype=int), j=1)
+#direction_synapses.connect(i=np.arange(min_front, max_front,dtype=int), j=[0, 1])
 #>>> n = np.int32(nb//2 + np.rint(nb*0.2/2))
 #>>> np.linspace(0,n,n+1)
 eqs_rad = '''

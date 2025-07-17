@@ -969,9 +969,17 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     ) % xmsg
 
                     raise RuntimeError(error_message)
+                nb_cpu = os.cpu_count() or 1
+                print(f"\033[35m➤ Number of CPU detected : {str(nb_cpu)}\033[0m")
+
+                load_limit = max(1, int(nb_cpu * 0.8))
                 
                 xc = os.system(
-                    'cd ' + self.file_path + '/../../ && MAKEFLAGS="-j1 -l1" colcon --log-level INFO build --executor sequential' 
+                    'cd ' + self.file_path + '/../../ && MAKEFLAGS="-j' + str(nb_cpu) 
+                    + ' -l1'
+                    + '" colcon build ' \
+                    '--cmake-args -DCATKIN_ENABLE_TESTING=OFF -DCMAKE_BUILD_TYPE=Debug' #+ ('Debug' if debug else 'Release')
+                    + ' --packages-skip my_audio_listener --packages-ignore my_audio_listener'
                     + (' --packages-skip turtlebot3_gz brian_interface --packages-ignore turtlebot3_gz brian_interface' if not prefs.devices.ros_standalone.interface else '')
                 )
 
