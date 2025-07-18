@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import softmax
 
+prefs.devices.ros_standalone.buffer_multiplier = 20
 set_device("ros_standalone", directory="src/src/brian_project", debug=True)
 defaultclock.dt = 1 / 48_000 * second
 
@@ -149,26 +150,26 @@ wheel = TwistPublisher(
 )
 get_device().add_publisher(wheel) 
    
-s_yn1 = StateMonitor(ears, 'yn1', record=True)
-s_yn2 = StateMonitor(ears, 'yn2', record=True)
-s_xn1 = StateMonitor(ears, 'xn1', record=True)
-s_xn2 = StateMonitor(ears, 'xn2', record=True)
-s_xn = StateMonitor(ears, 'xn', record=True)
+# s_yn1 = StateMonitor(ears, 'yn1', record=True)
+# s_yn2 = StateMonitor(ears, 'yn2', record=True)
+# s_xn1 = StateMonitor(ears, 'xn1', record=True)
+# s_xn2 = StateMonitor(ears, 'xn2', record=True)
+# s_xn = StateMonitor(ears, 'xn', record=True)
 
-radar_spikes = SpikeMonitor(radar)
-spikes = SpikeMonitor(neurons)
-combi = SpikeMonitor(combination)
-ears_spikes = SpikeMonitor(ears)
+# radar_spikes = SpikeMonitor(radar)
+# spikes = SpikeMonitor(neurons)
+# combi = SpikeMonitor(combination)
+# ears_spikes = SpikeMonitor(ears)
 
-# Ne peut pas etre utilise en un seul state monitor
-sound = StateMonitor(ears, 'yn', record=True)
-combi_state = StateMonitor(combination, 'v', record=True)
-radar_state = StateMonitor(radar, 'v', record=True)
-thresh = StateMonitor(ears, 'thresh', record=True)
-son = StateMonitor(ears, 'x', record=True)
-dir = StateMonitor(direction, 'v', record=True)
-dir_vel = StateMonitor(direction, 'vel', record=True)
-radian_state = StateMonitor(radian, 'veldiff', record=True)
+# # Ne peut pas etre utilise en un seul state monitor
+# sound = StateMonitor(ears, 'yn', record=True)
+# combi_state = StateMonitor(combination, 'v', record=True)
+# radar_state = StateMonitor(radar, 'v', record=True)
+# thresh = StateMonitor(ears, 'thresh', record=True)
+# son = StateMonitor(ears, 'x', record=True)
+# dir = StateMonitor(direction, 'v', record=True)
+# dir_vel = StateMonitor(direction, 'vel', record=True)
+# radian_state = StateMonitor(radian, 'veldiff', record=True)
 
-get_device().publish_monitors([sound, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, combi_state, radar_state, radian_state, spikes, ears_spikes, radar_spikes, combi])
-run(60 * second, report="text", report_period=5 * second)
+# get_device().publish_monitors([sound, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, combi_state, radar_state, radian_state, spikes, ears_spikes, radar_spikes, combi])
+run(60 * second, report="text", report_period=5 * second, profile=True)

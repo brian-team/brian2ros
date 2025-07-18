@@ -1,16 +1,19 @@
+message("Starting CMakeLists.txt generation...")
 cmake_minimum_required(VERSION 3.10)
 project(brian_project)
-
+message("Project name: ${PROJECT_NAME}")
 # Default to C++14
-if(NOT CMAKE_CXX_STANDARD) 
-  set(CMAKE_CXX_STANDARD 14) 
-endif()
-
+# if(NOT CMAKE_CXX_STANDARD) 
+#   set(CMAKE_CXX_STANDARD 14) 
+# endif()
+set(CMAKE_CXX_STANDARD 14)
 # Set additional compiler options for GCC and Clang
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang") 
   add_compile_options({{ compiler_flags }}) 
 endif()
 
+
+message("Starting find_package...")
 # Find necessary packages
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -20,16 +23,20 @@ find_package(turtleaudio REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
+message("Finished find_package...")
+message("Source files: {{ source_files }}")
 set(SRCS {{source_files}})
+message("Starting include_directories...")
 # Include directories
 include_directories(
   ${CMAKE_SOURCE_DIR}
   {{ include_dirs }}
 )
-
+message("Starting set OPTIMISATIONS...")
 set(OPTIMISATIONS {{ compiler_flags }})
 add_compile_options(${OPTIMISATIONS})
 
+message("Starting rosidl_generate_interfaces...")
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FloatStateMonitor.msg"
   DEPENDENCIES std_msgs
@@ -37,37 +44,43 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 ament_export_dependencies(rosidl_default_runtime)
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
+message("Starting add_executable...")
 # Add executable for the main project
 add_executable(main ${SRCS})
 target_link_libraries(main
-  'portaudio'
   ${cpp_typesupport_target}
 )
 ament_target_dependencies(main rclcpp std_msgs sensor_msgs turtleaudio)
 
+message("Starting install targets...")
 # Install targets
 install(TARGETS
   main
   DESTINATION lib/${PROJECT_NAME}
 )
 
+message("Installing main.bash...")
 install(PROGRAMS
   main.bash
   DESTINATION lib/${PROJECT_NAME}
 )
 
+message("Installing static_arrays...")
 install(
   DIRECTORY static_arrays
   DESTINATION lib/${PROJECT_NAME}
 )
 
+message("Installing json files...")
 install(
   FILES json/b_control.txt {% if cyclonedds %} cyclone_profile.xml {%endif%}
   DESTINATION lib/${PROJECT_NAME}
 )
 
+message("Installing results directory...")
 install(
   DIRECTORY
   DESTINATION lib/${PROJECT_NAME}/results
 )
+message("Finishing ament_package...")
 ament_package()
