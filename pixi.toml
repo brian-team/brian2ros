@@ -17,12 +17,12 @@ source_robot = { cmd = ["source install/setup.bash"], depends-on = ["colcon_reco
 robot_audio = { cmd = ["ros2 run turtleaudio audio_record"], depends-on = ["source_robot"]}
 
 [dependencies]
-python = ">=3.11.13,<3.13"
+python = ">=3.12.11,<3.13"
 catkin_pkg = ">=1.0.0,<2"
 brian2 = ">=2.9.0,<3"
 numpy = ">=1.26.4,<2"
 ros-jazzy-desktop = ">=0.11.0,<0.12"
-cmake = ">=4.0.2,<5"
+cmake = ">=4.0.3,<5"
 make = ">=4.4.1,<5"
 setuptools = ">=80.9.0,<81"
 colcon-common-extensions = ">=0.3.0,<0.4"
@@ -30,7 +30,7 @@ jinja2 = ">=3.1.6,<4"
 alsa-lib = ">=1.2.14,<2"
 alsa-plugins = ">=1.2.12,<2"
 pulseaudio = ">=17.0,<18"
-ros-jazzy-rclcpp = ">=28.1.6,<29"
+ros-jazzy-rclcpp = ">=28.1.9,<29"
 pip = ">=25.1.1,<26"
 
 [pypi-dependencies]
