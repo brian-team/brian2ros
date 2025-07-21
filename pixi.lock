@@ -2193,6 +2193,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libtasn1-4.20.0-hb9d3cd8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libtheora-1.1.1-h4ab18f5_1006.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libtiff-4.7.0-hf01ce69_5.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libudev-257.4-h9a4d06a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libudev1-257.4-h9a4d06a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libumfpack-6.3.5-h873dde6_7100101.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libunistring-0.9.10-h7f98852_0.tar.bz2
@@ -3195,6 +3196,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libtasn1-4.20.0-h86ecc28_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libtheora-1.1.1-h68df207_1006.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libtiff-4.7.0-h7c15681_5.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libudev-257.4-h1187dce_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libudev1-257.4-h1187dce_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libumfpack-6.3.5-h8b28e19_7100102.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libunistring-0.9.10-hf897c2e_0.tar.bz2
@@ -18871,6 +18873,24 @@ packages:
   purls: []
   size: 416270
   timestamp: 1740594010519
+- conda: https://conda.anaconda.org/conda-forge/linux-64/libudev-257.4-h9a4d06a_0.conda
+  sha256: a1efcfcba877bbf2c5fe72284059a0d8a5551e037e77fb5ac3cd8537df5e1ec9
+  md5: 1b470214c751f5ead25c7927c3a2f71a
+  depends:
+  - libudev1 257.4 h9a4d06a_0
+  license: LGPL-2.1-or-later
+  purls: []
+  size: 20211
+  timestamp: 1741612454968
+- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libudev-257.4-h1187dce_0.conda
+  sha256: d7252aa71eb88e70d703366a55ab643da8cd2b811d943f05595dd72d7c667b15
+  md5: fb03349af52931e82c085aba0d3ca142
+  depends:
+  - libudev1 257.4 h1187dce_0
+  license: LGPL-2.1-or-later
+  purls: []
+  size: 20247
+  timestamp: 1741612458349
 - conda: https://conda.anaconda.org/conda-forge/linux-64/libudev1-257.4-h9a4d06a_0.conda
   sha256: 65ebc2185cdc008f8da92864e8063e60293c59134b11b13e4bc44fd6f6e04eec
   md5: 8b87f46f586167c54b2d4c0fd4a72001
