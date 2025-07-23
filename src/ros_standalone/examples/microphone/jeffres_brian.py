@@ -1,21 +1,10 @@
 from brian2 import *
-from brian2ros import *
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.special import softmax
 
-prefs.devices.ros_standalone.buffer_multiplier = 20
-set_device("ros_standalone", directory="src/src/brian_project", debug=True)
+set_device("cpp_standalone")
 defaultclock.dt = 1 / 48_000 * second
 
-# Create a ROS Subscriber for audio input
-audio = Subscriber(
-    name="audio",
-    topic="audio_data",
-    topic_type="turtleaudio/msg/StereoAudioBlock",
-    output={"left": np.int16(np.linspace(0,1023,1024)), "right": np.int16(np.linspace(0,1023,1024))},
-    header="turtleaudio/msg/stereo_audio_block.hpp",
-)
+# Sound
+audio = TimedArray(10 * randn(50000), dt=defaultclock.dt) # white noise
 
 # Ears parameters
 sound_speed = 343.0*metre/second
@@ -40,12 +29,17 @@ f_max = 2500 * Hz
 nb_band = 16
 
 BW = 0.2
-fs = 48000 * Hz  
+fs = 48000 * Hz 
 
+#
+angular_speed = 2 * pi / second
 # Ears and sound motion around the head (constant angular speed)
 eqs_ears = '''
-f_center = f_min * (f_max / f_min) ** ((i%nb_band) / (nb_band - 1)) : Hz
-xn = audio(t, i // nb_band) : 1 (constant over dt)
+f_center : Hz (constant)
+xn = audio(t -delay) : 1 
+delay = distance * sin(theta) : second
+distance : second
+dtheta/dt = angular_speed : radian
 
 w0 : 1 (constant)
 alpha : 1 (constant)
@@ -75,7 +69,8 @@ thresh = p * thresh + lam * x
 
 ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>5000',reset=reset,
                     name='ears', method='euler',refractory=0.5*ms)
-
+ears.distance = concatenate((ones(nb_band) * -0.5 * max_delay, ones(nb_band) * 0.5 * max_delay)) * second
+ears.f_center = ' f_min * (f_max / f_min) ** ((i%nb_band) / (nb_band - 1))'  # Logarithmic spacing of frequencies
 ears.w0 = '(2 * pi * f_center) / fs'  # Angular frequency
 ears.alpha = 'sin(w0) * sinh((log(2)/2) * BW * (w0 / sin(w0)))'  # Filter coefficient
 ears.a0 = '1 + alpha'  # Normalization factor
@@ -149,19 +144,13 @@ veldiff = vel_left - vel_right : 1 (constant over dt)
 '''
 radian = NeuronGroup(1, eqs_rad)
 radian.vel_left = linked_var(direction, 'vel', [0])
-radian.vel_right = linked_var(direction, 'vel', [1])
-
-wheel = TwistPublisher(
-    name="wheel",
-    input={"angular.z": radian.veldiff},
-)
-get_device().add_publisher(wheel) 
+radian.vel_right = linked_var(direction, 'vel', [1]) 
    
-s_yn1 = StateMonitor(ears, 'yn1', record=True)
-s_yn2 = StateMonitor(ears, 'yn2', record=True)
-s_xn1 = StateMonitor(ears, 'xn1', record=True)
-s_xn2 = StateMonitor(ears, 'xn2', record=True)
-s_xn = StateMonitor(ears, 'xn', record=True)
+#s_yn1 = StateMonitor(ears, 'yn1', record=True)
+#s_yn2 = StateMonitor(ears, 'yn2', record=True)
+#s_xn1 = StateMonitor(ears, 'xn1', record=True)
+#s_xn2 = StateMonitor(ears, 'xn2', record=True)
+#s_xn = StateMonitor(ears, 'xn', record=True)
 
 radar_spikes = SpikeMonitor(radar)
 spikes = SpikeMonitor(neurons)
@@ -169,14 +158,18 @@ combi = SpikeMonitor(combination)
 ears_spikes = SpikeMonitor(ears)
 
 # Ne peut pas etre utilise en un seul state monitor
-sound = StateMonitor(ears, 'yn', record=True)
+#sound = StateMonitor(ears, 'yn', record=True)
 combi_state = StateMonitor(combination, 'v', record=True)
 radar_state = StateMonitor(radar, 'v', record=True)
-thresh = StateMonitor(ears, 'thresh', record=True)
-son = StateMonitor(ears, 'x', record=True)
-dir = StateMonitor(direction, 'v', record=True)
-dir_vel = StateMonitor(direction, 'vel', record=True)
+#thresh = StateMonitor(ears, 'thresh', record=True)
+#son = StateMonitor(ears, 'x', record=True)
+# dir = StateMonitor(direction, 'v', record=True)
+# dir_vel = StateMonitor(direction, 'vel', record=True)
 radian_state = StateMonitor(radian, 'veldiff', record=True)
 
-get_device().publish_monitors([sound, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, combi_state, radar_state, radian_state, spikes, ears_spikes, radar_spikes, combi])
-run(60 * second, report="text", report_period=5 * second, profile=True)
+state_ears = StateMonitor(ears, ['yn', 'yn1', 'yn2', 'xn', 'xn1', 'xn2', 'x', 'thresh'], record=True)
+state_direction = StateMonitor(direction, ['v', 'vel'], record=True)
+
+run(10*second, report='text', report_period=1*second, profile=True)
+
+
