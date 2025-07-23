@@ -14,7 +14,7 @@ sigma_ear = .1
 tau_ear = 0.5*ms
 max_delay = distance_between_ears / sound_speed
 lam = 0.7  
-angular_speed = 2 * pi / second
+angular_speed = 0.5 * pi / second
 
 # Thresholds
 a = 1
@@ -54,7 +54,6 @@ xn = audio(t -delay) : 1
 delay = distance * sin(theta) : second
 distance : second
 dtheta/dt = angular_speed : radian
-
 w0 : 1 (constant)
 alpha : 1 (constant)
 a0 : 1 (constant)
@@ -118,7 +117,7 @@ eqs_radar = '''
 dv/dt = -v / tau_radar: 1
 '''
 
-radar = NeuronGroup(num_radar * nb_band, eqs_radar, threshold='v>1', method='euler', name='radar', reset='v=0', dt=0.1*ms)
+radar = NeuronGroup(num_radar * nb_band, eqs_radar, threshold='v>1', method='euler', name='radar', reset='v=0', dt=5*defaultclock.dt)
 radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
 radar_synapses.connect(condition='j == i//(num_neurons//num_radar)')
 
@@ -127,7 +126,7 @@ radar_synapses.connect(condition='j == i//(num_neurons//num_radar)')
 eqs_combi = '''
 dv/dt = -v / tau_radar : 1
 '''
-combination = NeuronGroup(num_radar, eqs_combi, threshold='v>1', reset='v=0', method='euler', name='combination', dt=0.1*ms)
+combination = NeuronGroup(num_radar, eqs_combi, threshold='v>1', reset='v=0', method='euler', name='combination', dt=5*defaultclock.dt)
 combination_synapses = Synapses(radar, combination, on_pre='v += 0.65')
 combination_synapses.connect('j == i // nb_band') 
 
@@ -138,7 +137,7 @@ dv/dt = clip(-v, -max_vel, max_vel) / tau_direction : 1
 dvel/dt = (v - vel) / tau_target : 1
 '''
 
-direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction', dt=0.1*ms)
+direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction', dt=5*defaultclock.dt)
 direction_synapses = Synapses(combination, direction, on_pre='v += alpha_vel * ((abs(i-((num_radar-1)/2))/((num_radar-1)/2))-a_front)')
 direction_synapses.connect(i=np.arange(0,max_front,dtype=int), j=0)
 direction_synapses.connect(i=np.arange(min_front,num_radar,dtype=int), j=1)
@@ -167,6 +166,7 @@ combi_state = StateMonitor(combination, 'v', record=True)
 dire_state = StateMonitor(direction, ['v', 'vel'], record=True)
 radian_state = StateMonitor(radian, 'veldiff', record=True)
 
-run(10*second, report='text', report_period=1*second, profile=True)
+run(10*second, report="text", report_period=1 * second)
 
 
+print(device._last_run_time)

@@ -101,13 +101,13 @@ constants = {
 
 range = LaserScanSubscriber(
     name= "range",
-    output={"ranges": 0}
+    output={"ranges": [0]}
 )
 
 equations = Equations(
     """
     dv/dt = (IL+ICa_cilia+IK+IKCa_cilia+I)/C : volt
-    d = int(range(t,0,0) <= 0.5) : 1
+    d = int(range(t,0) <= 0.5) : 1
     I = 10*nA*d : amp
     dx/dt = velocity*cos(orientation) : meter
     dy/dt = velocity*sin(orientation) : meter
@@ -168,8 +168,9 @@ motor_commands = TwistPublisher(
 get_device().add_publisher(motor_commands)  
 S_sensor = SpikeMonitor(neuron)
 pops = PopulationRateMonitor(neuron)
-M = StateMonitor(neuron, "v", record=True, dt=1 * ms)
-
+M = StateMonitor(neuron, "v", record=True)
+state_vel = StateMonitor(neuron, "velocity", record=True)
+get_device().publish_monitors([M, pops, S_sensor, state_vel])
 trigger_time = 500 * ms
 I0 = 5 * nA
 

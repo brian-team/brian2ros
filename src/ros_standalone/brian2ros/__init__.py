@@ -239,7 +239,7 @@ class Subscriber(Function):
 
             tail_""" + out_name + """ = (static_cast<int>(std::round(t / brian::_array_defaultclock_dt[0]))) % """ + str(len(out_value) * prefs.devices.ros_standalone.buffer_multiplier) + """;
             int nb_""" + out_name + """_while = 0;
-            std::cout << "tail_""" + out_name + """ : " << tail_""" + out_name + """ << std::endl;
+            //std::cout << "tail_""" + out_name + """ : " << tail_""" + out_name + """ << std::endl;
             while(brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] < previous_frame_id_""" + out_name + """ || brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] == 0){ 
                 std::this_thread::sleep_for(std::chrono::duration<double>(brian::_array_defaultclock_dt[0]));
                 if(Network::_globally_stopped){
