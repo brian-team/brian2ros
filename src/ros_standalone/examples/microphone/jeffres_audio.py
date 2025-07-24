@@ -20,7 +20,7 @@ audio = Subscriber(
 # EARS PARAMETERS
 
 sound_speed = 343.0*metre/second
-distance_between_ears = 0.22*metre
+distance_between_ears = 0.2*metre
 sigma_ear = .1
 tau_ear = 0.5*ms
 max_delay = distance_between_ears / sound_speed
@@ -30,6 +30,7 @@ lam = 0.7
 a = 1
 p = 1.5
 tau_thresh = 5*ms
+min_thresh = 50000
 
 # Filter parameters
 f_min = 100 * Hz
@@ -40,7 +41,7 @@ fs = 48000 * Hz
 
 # NEURONS PARAMETERS
 num_neurons = 30
-tau = 0.2*ms
+tau = 1*ms
 
 # RADAR PARAMETERS
 tau_radar = 2 * ms
@@ -48,11 +49,11 @@ num_radar = 15
 
 # DIRECTION PARAMETERS
 num_direction = 2 # Left and Right
-tau_direction = 2 * ms  
+tau_direction = 5 * ms  
 tau_target = 50 * ms
 max_vel = 1.82 
 alpha_vel = 3 # acceleration factor
-a_front = 0.3 # Determines the front
+a_front = 0.2 # Determines the front
 min_front = num_neurons//2 - np.floor(num_neurons*a_front/2)
 max_front = (num_neurons//2 + np.floor(num_neurons*a_front/2)) + 1
 
@@ -89,8 +90,8 @@ x = 0
 thresh = p * thresh + lam * x
 '''
 
-ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>15000',reset=reset,
-                    name='ears', method='euler',refractory=0.5*ms)
+ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>min_thresh',reset=reset,
+                    name='ears', method='euler',refractory=0.2*ms)
 ears.f_center = ' f_min * (f_max / f_min) ** ((i%nb_band) / (nb_band - 1))'  # Logarithmic spacing of frequencies
 ears.w0 = '(2 * pi * f_center) / fs'  # Angular frequency
 ears.alpha = 'sin(w0) * sinh((log(2)/2) * BW * (w0 / sin(w0)))'  # Filter coefficient
@@ -103,7 +104,7 @@ ears.a2 = '(1 - alpha) / a0'  # Coefficient for output two steps back
 
 ears.run_regularly('xn2 = xn1 ; xn1 = xn ; yn2 = yn1 ; yn1 = yn', dt=defaultclock.dt, when='end')
 
-ears.thresh = np.ones(2 * nb_band) * 5000  # Initialize thresholds
+ears.thresh = np.ones(2 * nb_band) * min_thresh  # Initialize thresholds
 
 # NEURONS
 
@@ -111,22 +112,22 @@ eqs_neurons = '''
 dv/dt = -v / tau : 1
 '''
 neurons = NeuronGroup(num_neurons * nb_band, eqs_neurons, threshold='v>1',
-                       reset='v=0', name='neurons', method='euler',refractory=10*ms)
+                       reset='v=0', name='neurons', method='euler')
 # Connect ears to neurons
-synapses = Synapses(ears, neurons, on_pre='v += .65')
+synapses = Synapses(ears, neurons, on_pre='v += .6')
 synapses.connect('i % nb_band == j // num_neurons')  
 
-synapses.delay['i//nb_band==0'] = '(1.0*j)/(num_neurons-1)*1.1*max_delay'
-synapses.delay['i//nb_band==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
- 
+synapses.delay['i//nb_band==0'] = '(1.0*(j%num_neurons))/(num_neurons-1)*1.1*max_delay'
+synapses.delay['i//nb_band==1'] = '(1.0*(num_neurons-(j%num_neurons)-1))/(num_neurons-1)*1.1*max_delay'
+
 # RADAR
 
 eqs_radar = '''
 dv/dt = -v / tau_radar: 1
 '''
 radar = NeuronGroup(num_neurons, eqs_radar, threshold='v>1', method='euler', name='radar', reset='v=0', dt=5*defaultclock.dt)
-radar_synapses = Synapses(neurons, radar, on_pre='v += 0.55')
-radar_synapses.connect(condition='j == i//nb_band')
+radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
+radar_synapses.connect(condition='j == i%num_neurons')
 
 #wta = Synapses(radar, radar, on_pre='v -= 0.65')  
 #wta.connect(condition='i != j')
@@ -178,21 +179,21 @@ s_xn2 = StateMonitor(ears, 'xn2', record=True)
 son = StateMonitor(ears, 'x', record=True)
 thresh = StateMonitor(ears, 'thresh', record=True)
 
+neurons_state = StateMonitor(neurons, 'v', record=True)
 radar_state = StateMonitor(radar, 'v', record=True)
 
 dir = StateMonitor(direction, 'v', record=True)
 dir_vel = StateMonitor(direction, 'vel', record=True)
 
 radian_state = StateMonitor(radian, 'veldiff', record=True)
-
-radar_spikes = SpikeMonitor(radar)
-spikes = SpikeMonitor(neurons)
-#combi = SpikeMonitor(combination)
 ears_spikes = SpikeMonitor(ears)
+spikes = SpikeMonitor(neurons)
+radar_spikes = SpikeMonitor(radar)
+#combi = SpikeMonitor(combination)
 
 # Ne peut pas etre utilise en un seul state monitor
 #combi_state = StateMonitor(combination, 'v', record=True)
 
 
-get_device().publish_monitors([s_yn, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, radar_state, radian_state, spikes, ears_spikes, radar_spikes])
+get_device().publish_monitors([neurons_state,s_yn, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, radar_state, radian_state, spikes, ears_spikes, radar_spikes])
 run(60 * second)

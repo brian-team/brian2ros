@@ -175,11 +175,11 @@ private:
     double w = msg->pose.pose.orientation.w;
     double rad_z = atan2(2*(w*z), 1 - 2*(z*z));
     orientation = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
-    //RCLCPP_INFO(this->get_logger(), "Orientation of sound source: %f rad", rad_z * 180 / M_PI);
-    //RCLCPP_INFO(this->get_logger(), "Phase shift: %f rad", orientation * 180 / M_PI);
+    RCLCPP_INFO(this->get_logger(), "Orientation of sound source: %f rad", rad_z * 180 / M_PI);
+    RCLCPP_INFO(this->get_logger(), "Phase shift: %f rad", orientation * 180 / M_PI);
     // Update the source orientation based on the current orientation of the sound source
   }
-  double source_orientation = - M_PI / 2; // Initial orientation of the sound source
+  double source_orientation = M_PI / 4; // Initial orientation of the sound source
   bool change_orientation = true;
   // This function generates a sine wave signal for testing purposes.
   // It simulates a sound wave with a frequency of 440 Hz (A4 note) and a phase shift.

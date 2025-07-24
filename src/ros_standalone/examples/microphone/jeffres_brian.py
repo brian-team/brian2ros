@@ -108,8 +108,8 @@ neurons = NeuronGroup(num_neurons * nb_band, eqs_neurons, threshold='v>1',
 synapses = Synapses(ears, neurons, on_pre='v += .65')
 synapses.connect('i % nb_band == j // num_neurons')  
 
-synapses.delay['i//nb_band==0'] = '(1.0*j)/(num_neurons-1)*1.1*max_delay'
-synapses.delay['i//nb_band==1'] = '(1.0*(num_neurons-j-1))/(num_neurons-1)*1.1*max_delay'
+synapses.delay['i//nb_band==0'] = '(1.0*(j%num_neurons))/(num_neurons-1)*1.1*max_delay'
+synapses.delay['i//nb_band==1'] = '(1.0*(num_neurons-(j%num_neurons)-1))/(num_neurons-1)*1.1*max_delay'
  
 # RADAR
 
@@ -166,7 +166,22 @@ combi_state = StateMonitor(combination, 'v', record=True)
 dire_state = StateMonitor(direction, ['v', 'vel'], record=True)
 radian_state = StateMonitor(radian, 'veldiff', record=True)
 
-run(10*second, report="text", report_period=1 * second)
+run(10*second)
 
 
 print(device._last_run_time)
+
+import numpy as np
+import matplotlib.pyplot as plt
+# Plotting the results
+plt.figure(figsize=(12, 8))
+for y in ears_state.yn:
+    y_fft = np.fft.fft(y)
+    y_fft = np.abs(y_fft[:len(y_fft)//2])  # Take the positive frequencies
+    x = np.fft.fftfreq(len(y), d=defaultclock.dt)[:len(y_fft)]  # Frequency axis
+    plt.plot(x, y_fft, label='Ear Output FFT')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Amplitude')
+plt.title('FFT of Ear Outputs')
+plt.legend()
+plt.show()
