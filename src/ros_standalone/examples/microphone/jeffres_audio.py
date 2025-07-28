@@ -30,7 +30,7 @@ lam = 0.7
 a = 1
 p = 1.5
 tau_thresh = 5*ms
-min_thresh = 50000
+min_thresh = 1000
 
 # Filter parameters
 f_min = 100 * Hz
@@ -41,19 +41,19 @@ fs = 48000 * Hz
 
 # NEURONS PARAMETERS
 num_neurons = 30
-tau = 1*ms
+tau = 0.4*ms
 
 # RADAR PARAMETERS
-tau_radar = 2 * ms
-num_radar = 15
+tau_radar = 5 * ms
+num_radar = 15 # NOT USED
 
 # DIRECTION PARAMETERS
 num_direction = 2 # Left and Right
 tau_direction = 5 * ms  
 tau_target = 50 * ms
 max_vel = 1.82 
-alpha_vel = 3 # acceleration factor
-a_front = 0.2 # Determines the front
+alpha_vel = 0.2 # acceleration factor
+a_front = 0.05 # Determines the front
 min_front = num_neurons//2 - np.floor(num_neurons*a_front/2)
 max_front = (num_neurons//2 + np.floor(num_neurons*a_front/2)) + 1
 
@@ -117,8 +117,8 @@ neurons = NeuronGroup(num_neurons * nb_band, eqs_neurons, threshold='v>1',
 synapses = Synapses(ears, neurons, on_pre='v += .6')
 synapses.connect('i % nb_band == j // num_neurons')  
 
-synapses.delay['i//nb_band==0'] = '(1.0*(j%num_neurons))/(num_neurons-1)*1.1*max_delay'
-synapses.delay['i//nb_band==1'] = '(1.0*(num_neurons-(j%num_neurons)-1))/(num_neurons-1)*1.1*max_delay'
+synapses.delay['i//nb_band==1'] = '(1.0*(j%num_neurons))/(num_neurons-1)*1.1*max_delay'
+synapses.delay['i//nb_band==0'] = '(1.0*(num_neurons-(j%num_neurons)-1))/(num_neurons-1)*1.1*max_delay'
 
 # RADAR
 
@@ -129,8 +129,8 @@ radar = NeuronGroup(num_neurons, eqs_radar, threshold='v>1', method='euler', nam
 radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
 radar_synapses.connect(condition='j == i%num_neurons')
 
-#wta = Synapses(radar, radar, on_pre='v -= 0.65')  
-#wta.connect(condition='i != j')
+wta = Synapses(radar, radar, on_pre='v -= 0.65')  
+wta.connect(condition='i != j')
 
 # COMBINATION
 

@@ -249,8 +249,8 @@ private:
 
     for (size_t i = 0; i < BUFFER_SIZE; ++i) 
     {
-      *dst_left++ = static_cast<int16_t>(*src++);
-      *dst_right++ = static_cast<int16_t>(*src++);
+      *dst_left++ = *src++;
+      *dst_right++ = *src++;
     }
 
     msg.header.frame_id = std::to_string(frame_count);

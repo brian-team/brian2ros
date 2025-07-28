@@ -56,6 +56,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cairo-1.18.4-h3394656_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/capnproto-1.2.0-hfc315d8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/catkin_pkg-1.0.0-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/ccache-4.11.3-h80c52d3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cffi-1.17.1-py312h06ac9bb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cfitsio-4.6.2-h44b4e7a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cli11-2.5.0-h3f2d84a_0.conda
@@ -299,6 +300,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libgz-tools2-2.0.1-h4149140_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libgz-transport13-13.4.0-h5505d5b_5.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libgz-utils2-2.2.0-h5888daf_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/libhiredis-1.0.2-h2cc385e_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libhwloc-2.11.2-default_h3d81e11_1002.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libhwy-1.2.0-hf40a0c7_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libiconv-1.18-h4ce23a2_1.conda
@@ -964,6 +966,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/cairo-1.18.4-h83712da_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/capnproto-1.2.0-h272d560_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/catkin_pkg-1.0.0-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/ccache-4.11.3-h4889ad1_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/cffi-1.17.1-py312hac81daf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/cfitsio-4.6.2-hc40dbb5_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/cli11-2.5.0-h5ad3122_0.conda
@@ -1205,6 +1208,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libgz-tools2-2.0.1-h2cbc0ae_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libgz-transport13-13.4.0-he46a31c_5.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libgz-utils2-2.2.0-h5ad3122_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libhiredis-1.0.2-h05efe27_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libhwloc-2.11.2-default_h6f258fa_1002.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libhwy-1.2.0-had1c3c2_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libiconv-1.18-hc99b53d_1.conda
@@ -10265,6 +10269,35 @@ packages:
   - pkg:pypi/catkin-pkg?source=hash-mapping
   size: 53393
   timestamp: 1734127327150
+- conda: https://conda.anaconda.org/conda-forge/linux-64/ccache-4.11.3-h80c52d3_0.conda
+  sha256: ac9464a60a7b085b5a999aaf33d882705390d7749b35e320f639614ae0cc9474
+  md5: eb517c6a2b960c3ccb6f1db1005f063a
+  depends:
+  - libgcc >=13
+  - libstdcxx >=13
+  - libgcc >=13
+  - __glibc >=2.17,<3.0.a0
+  - zstd >=1.5.7,<1.6.0a0
+  - libhiredis >=1.0.2,<1.1.0a0
+  license: GPL-3.0-only
+  license_family: GPL
+  purls: []
+  size: 708908
+  timestamp: 1746271484780
+- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/ccache-4.11.3-h4889ad1_0.conda
+  sha256: 21d9c49564d3792f3efc34046ca3fea8fa4fe9eaad655b8b218be26244396c24
+  md5: e0b9e519da2bf0fb8c48381daf87a194
+  depends:
+  - libgcc >=13
+  - libstdcxx >=13
+  - libgcc >=13
+  - zstd >=1.5.7,<1.6.0a0
+  - libhiredis >=1.0.2,<1.1.0a0
+  license: GPL-3.0-only
+  license_family: GPL
+  purls: []
+  size: 739558
+  timestamp: 1746271741284
 - conda: https://conda.anaconda.org/conda-forge/linux-64/ceres-solver-2.2.0-cpuhbc9e029_7.conda
   sha256: 22b55c6e7d7d1f86c7bed8f06de9675b20de440da4ec953eab4bf8974a56e451
   md5: 125ce673a945e0b1bdc9283ad1f2c992
@@ -16929,6 +16962,32 @@ packages:
   purls: []
   size: 56818
   timestamp: 1735637948274
+- conda: https://conda.anaconda.org/conda-forge/linux-64/libhiredis-1.0.2-h2cc385e_0.tar.bz2
+  sha256: ee39c69df4fb39cfe1139ac4f7405bb066eba773e11ba3ab7c33835be00c2e48
+  md5: b34907d3a81a3cd8095ee83d174c074a
+  depends:
+  - libgcc-ng >=9.4.0
+  - libgfortran-ng
+  - libgfortran5 >=9.4.0
+  - libstdcxx-ng >=9.4.0
+  license: BSD-3-Clause
+  license_family: BSD
+  purls: []
+  size: 147325
+  timestamp: 1633982069195
+- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libhiredis-1.0.2-h05efe27_0.tar.bz2
+  sha256: f8878068428e83acd4783186c57d51d963aa331e6aa1e14d01fe86dffa982cf3
+  md5: a87f068744fd20334cd41489eb163bee
+  depends:
+  - libgcc-ng >=9.4.0
+  - libgfortran-ng
+  - libgfortran5 >=9.4.0
+  - libstdcxx-ng >=9.4.0
+  license: BSD-3-Clause
+  license_family: BSD
+  purls: []
+  size: 145989
+  timestamp: 1633983079265
 - conda: https://conda.anaconda.org/conda-forge/linux-64/libhwloc-2.11.2-default_h3d81e11_1002.conda
   sha256: 2823a704e1d08891db0f3a5ab415a2b7e391a18f1e16d27531ef6a69ec2d36b9
   md5: 56aacccb6356b6b6134a79cdf5688506
