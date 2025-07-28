@@ -28,6 +28,11 @@ envisager de faire un direction avec deux neurones (droite gauche) pour leur env
 
 - ajouter l'adaptation de la différence de temps en fonction de la position angulaire du robot DONE
 
+---------------------------------------------------
+
+- Ajouter du bruit sur l'action motrice pour permettre au robot de se tourner lorsqu'il y a une source pile derriere lui
+
+- Trouver un moyen de créer un minimum de threshold adaptif
 
 ---------------------------------------------------
 
