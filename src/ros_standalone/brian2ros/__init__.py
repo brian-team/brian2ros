@@ -977,8 +977,8 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                 xc = os.system(
                     'cd ' + self.file_path + '/../../ && MAKEFLAGS="-j' + str(nb_cpu) 
                     + ' -l' + str(load_limit)
-                    + '" colcon build --packages-up-to brian_project --event-handlers console_direct+ ' \
-                    '--cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache' 
+                    + '" colcon build --packages-up-to brian_project ' #--event-handlers console_direct+ ' 
+                    + '--cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache' 
                     + ' --packages-skip my_audio_listener --packages-ignore my_audio_listener' # DOIT ETRE ENLEVER LORSQUE LE PACKAGE SERA SUPPRIMER
                     + (' --packages-skip turtlebot3_gz brian_interface --packages-ignore turtlebot3_gz brian_interface' if not prefs.devices.ros_standalone.interface else '')
                 )

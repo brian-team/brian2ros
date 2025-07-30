@@ -53,7 +53,7 @@ max_front = (num_neurons//2 + np.floor(num_neurons*a_front/2)) + 1
 
 eqs_ears = '''
 f_center : Hz
-xn = audio(t -delay) : 1 
+xn = 3* clip(audio(t -delay), 0, inf)**(1.0/3.0) : 1 
 delay = distance * sin(theta) : second
 distance : second
 dtheta/dt = angular_speed : radian

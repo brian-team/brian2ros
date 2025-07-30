@@ -30,7 +30,7 @@ lam = 0.7
 a = 1
 p = 1.5
 tau_thresh = 5*ms
-min_thresh = 1000
+#min_thresh = 3000
 
 # Filter parameters
 f_min = 100 * Hz
@@ -72,6 +72,7 @@ b0 : 1 (constant)
 b1 : 1 (constant)
 b2 : 1 (constant) 
 
+
 yn = b0 * xn + b1 * xn1 + b2 * xn2 - a1 * yn1 - a2 * yn2 : 1 (constant over dt)
 
 yn1 : 1
@@ -80,8 +81,11 @@ yn2 : 1
 xn2 : 1 
 xn1 : 1 
 
-dx/dt = (yn - x)/tau_ear : 1 (unless refractory)
+dx/dt = 3*clip(yn - x, 0, inf)**(1/3)/tau_ear : 1 (unless refractory)
 dthresh/dt = (a * clip(x, 0, inf) - thresh) / tau_thresh : 1
+
+beta : 1 (constant)
+min_thresh : 1 (linked)
 '''
 
 
@@ -90,7 +94,7 @@ x = 0
 thresh = p * thresh + lam * x
 '''
 
-ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>min_thresh',reset=reset,
+ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>min_thresh * beta',reset=reset,
                     name='ears', method='euler',refractory=0.2*ms)
 ears.f_center = ' f_min * (f_max / f_min) ** ((i%nb_band) / (nb_band - 1))'  # Logarithmic spacing of frequencies
 ears.w0 = '(2 * pi * f_center) / fs'  # Angular frequency
@@ -101,10 +105,19 @@ ears.b1 = '0'  # Coefficient for previous input
 ears.b2 = '(-sin(w0) / 2) / a0'  # Coefficient for input two steps back
 ears.a1 = '(-2 * cos(w0)) / a0'  # Coefficient for previous output
 ears.a2 = '(1 - alpha) / a0'  # Coefficient for output two steps back
-
 ears.run_regularly('xn2 = xn1 ; xn1 = xn ; yn2 = yn1 ; yn1 = yn', dt=defaultclock.dt, when='end')
 
-ears.thresh = np.ones(2 * nb_band) * min_thresh  # Initialize thresholds
+ears.thresh = np.ones(2 * nb_band)  # Initialize thresholds
+
+eqs_thresh = '''
+dnoiselevel/dt = (clip(x_in, 0, inf) - noiselevel) / (50*ms) : 1
+x_in : 1 (linked)
+'''
+adaptive_thresh = NeuronGroup(2 * nb_band, eqs_thresh, method='euler', name='adaptive_thresh')
+adaptive_thresh.x_in = linked_var(ears, 'x')
+
+ears.min_thresh = linked_var(adaptive_thresh, 'noiselevel')
+ears.beta = 2  # Ajustable
 
 # NEURONS
 
@@ -171,18 +184,19 @@ wheel = TwistPublisher(
 get_device().add_publisher(wheel) 
 
 s_yn = StateMonitor(ears, 'yn', record=True)
-s_yn1 = StateMonitor(ears, 'yn1', record=True)
-s_yn2 = StateMonitor(ears, 'yn2', record=True)
+#s_yn1 = StateMonitor(ears, 'yn1', record=True)
+#s_yn2 = StateMonitor(ears, 'yn2', record=True)
 s_xn = StateMonitor(ears, 'xn', record=True)   
-s_xn1 = StateMonitor(ears, 'xn1', record=True)
-s_xn2 = StateMonitor(ears, 'xn2', record=True)
-son = StateMonitor(ears, 'x', record=True)
-thresh = StateMonitor(ears, 'thresh', record=True)
+#s_xn1 = StateMonitor(ears, 'xn1', record=True)
+#s_xn2 = StateMonitor(ears, 'xn2', record=True)
+#son = StateMonitor(ears, 'x', record=True)
+#thresh = StateMonitor(ears, 'thresh', record=True)
+s_noiselevel = StateMonitor(adaptive_thresh, 'noiselevel', record=True)
 
-neurons_state = StateMonitor(neurons, 'v', record=True)
-radar_state = StateMonitor(radar, 'v', record=True)
+#neurons_state = StateMonitor(neurons, 'v', record=True)
+#radar_state = StateMonitor(radar, 'v', record=True)
 
-dir = StateMonitor(direction, 'v', record=True)
+#dir = StateMonitor(direction, 'v', record=True)
 dir_vel = StateMonitor(direction, 'vel', record=True)
 
 radian_state = StateMonitor(radian, 'veldiff', record=True)
@@ -195,5 +209,5 @@ radar_spikes = SpikeMonitor(radar)
 #combi_state = StateMonitor(combination, 'v', record=True)
 
 
-get_device().publish_monitors([neurons_state,s_yn, thresh, son, dir, dir_vel, s_yn1, s_yn2, s_xn1, s_xn2, s_xn, radar_state, radian_state, spikes, ears_spikes, radar_spikes])
+get_device().publish_monitors([s_yn, dir_vel, s_xn, radian_state, s_noiselevel, spikes, ears_spikes, radar_spikes])
 run(60 * second)
