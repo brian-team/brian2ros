@@ -74,16 +74,22 @@ public:
 
     ROS() : Node("ros_brian")
     {   
-        rclcpp::QoS qos_realtime(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
-        qos_realtime
+        rclcpp::QoS qos_realtime_sub(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
+        qos_realtime_sub
             .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
             .history(RMW_QOS_POLICY_HISTORY_KEEP_ALL)
             .keep_last(5);
 
+        rclcpp::QoS qos_realtime_pub(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_default));
+        qos_realtime_pub
+            .reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT)
+            .history(RMW_QOS_POLICY_HISTORY_KEEP_LAST)
+            .keep_last(3);
+
         // Create all the publishers given by the user
         {% for publisher in publishers %}
         publisher_{{publisher["name"]}} = 
-            this->create_publisher<{{publisher["topic_type"]}}>("{{publisher["topic"]}}", qos_realtime);
+            this->create_publisher<{{publisher["topic_type"]}}>("{{publisher["topic"]}}", qos_realtime_sub);
         timer_{{publisher["name"]}} = this->create_wall_timer(
             {{publisher["rate"]}}ms, std::bind(&ROS::{{publisher["name"]}}_pub_callback, this));
         {% endfor %}
@@ -93,7 +99,7 @@ public:
         {% for subscriber in subscribers %}
         subscription_{{subscriber["name"]}} = 
             this->create_subscription<{{subscriber["topic_type"]}}>(
-            "{{subscriber["topic"]}}", qos_realtime, std::bind(&ROS::{{subscriber["name"]}}_sub_callback, this, _1));
+            "{{subscriber["topic"]}}", qos_realtime_sub, std::bind(&ROS::{{subscriber["name"]}}_sub_callback, this, _1));
         {% endfor %}  
         //
         subscription_control = this->create_subscription<std_msgs::msg::String>(
@@ -103,11 +109,11 @@ public:
         {% for pub_monitor in pub_monitors %}
         {% if pub_monitor["type"] == "FloatStateMonitor" %}
         publisher_{{pub_monitor["name"]}} =
-                this->create_publisher<brian_project::msg::FloatStateMonitor>("{{pub_monitor["name"]}}", 10);
+                this->create_publisher<brian_project::msg::FloatStateMonitor>("{{pub_monitor["name"]}}", qos_realtime_pub);
         {% endif %}
         {% if pub_monitor["type"] == "Float64" %}
         publisher_{{pub_monitor["name"]}} =
-                this->create_publisher<std_msgs::msg::Float64>("{{pub_monitor["name"]}}", 10);
+                this->create_publisher<std_msgs::msg::Float64>("{{pub_monitor["name"]}}", qos_realtime_pub);
         {% endif %}
         {% endfor %}    
         //
