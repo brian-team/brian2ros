@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import softmax
 
-prefs.devices.ros_standalone.buffer_multiplier = 5
+prefs.devices.ros_standalone.buffer_multiplier = 7
 set_device("ros_standalone", directory="src/src/brian_project", debug=True)
 defaultclock.dt = 1 / 48_000 * second
 
@@ -50,7 +50,7 @@ num_radar = 15 # NOT USED
 # DIRECTION PARAMETERS
 num_direction = 2 # Left and Right
 tau_direction = 5 * ms  
-tau_target = 50 * ms
+tau_target = 100 * ms
 max_vel = 1.82 
 alpha_vel = 0.2 # acceleration factor
 a_front = 0.05 # Determines the front
@@ -117,7 +117,7 @@ adaptive_thresh = NeuronGroup(2 * nb_band, eqs_thresh, method='euler', name='ada
 adaptive_thresh.x_in = linked_var(ears, 'x')
 
 ears.min_thresh = linked_var(adaptive_thresh, 'noiselevel')
-ears.beta = 2  # Ajustable
+ears.beta = 2 
 
 # NEURONS
 
@@ -144,15 +144,6 @@ radar_synapses.connect(condition='j == i%num_neurons')
 
 wta = Synapses(radar, radar, on_pre='v -= 0.65')  
 wta.connect(condition='i != j')
-
-# COMBINATION
-
-# eqs_combi = '''
-# dv/dt = -v / tau_radar : 1
-# '''
-# combination = NeuronGroup(num_radar, eqs_combi, threshold='v>1', reset='v=0', method='euler', name='combination', dt=5*defaultclock.dt)
-# combination_synapses = Synapses(radar, combination, on_pre='v += 0.65')
-# combination_synapses.connect('j == i // nb_band') 
 
 # DIRECTION DETECTION
 

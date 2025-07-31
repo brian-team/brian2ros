@@ -1,20 +1,26 @@
 from brian2 import *
+import numpy as np
+import matplotlib.pyplot as plt
 
 set_device("cpp_standalone")
 defaultclock.dt = 1 / 48_000 * second
 
-# Sound
-audio = TimedArray(10 * randn(50000), dt=defaultclock.dt) # white noise
 
 # EARS PARAMETERS
 
 sound_speed = 343.0*metre/second
-distance_between_ears = 0.22*metre
+distance_between_ears = 0.2*metre
 sigma_ear = .1
 tau_ear = 0.5*ms
 max_delay = distance_between_ears / sound_speed
 lam = 0.7  
-angular_speed = 0.5 * pi / second
+#angular_speed = 0.5 * pi / second
+
+# Sound
+#audio = TimedArray((32767.0 / 2) * randn(500000), dt=defaultclock.dt) # white noise
+audio = TimedArray((32767.0 / 2) * sin(np.arange(0,10,1/48000) * 2 * np.pi * 440), dt=defaultclock.dt) # 440 Hz sine wave
+
+source_theta = TimedArray(np.concatenate((np.zeros(100000), np.ones(200000)*(np.pi/2), np.ones(200000)*(-np.pi/2))), dt=defaultclock.dt)
 
 # Thresholds
 a = 1
@@ -30,19 +36,19 @@ fs = 48000 * Hz
 
 # NEURONS PARAMETERS
 num_neurons = 30
-tau = 0.2*ms
+tau = 0.4*ms
 
 # RADAR PARAMETERS
-tau_radar = 25 * ms
+tau_radar = 5 * ms
 num_radar = 15
 
 # DIRECTION PARAMETERS
 num_direction = 2 # Left and Right
-tau_direction = 2 * ms  
-tau_target = 20 * ms
+tau_direction = 5 * ms  
+tau_target = 50 * ms
 max_vel = 1.82 
 alpha_vel = 2 # acceleration factor
-a_front = 0.2 # Determines the front
+a_front = 0.05 # Determines the front
 min_front = num_radar//2 - np.floor(num_radar*a_front/2)
 max_front = (num_radar//2 + np.floor(num_radar*a_front/2)) + 1
 
@@ -50,10 +56,12 @@ max_front = (num_radar//2 + np.floor(num_radar*a_front/2)) + 1
 
 eqs_ears = '''
 f_center : Hz (constant)
-xn = audio(t -delay) : 1 
-delay = distance * sin(theta) : second
+xn = audio(t - delay) : 1 
+delay = distance * sin(source_theta(t) - theta) : second
 distance : second
-dtheta/dt = angular_speed : radian
+dtheta/dt = angular_speed / second : radian
+angular_speed : 1 (linked)
+
 w0 : 1 (constant)
 alpha : 1 (constant)
 a0 : 1 (constant)
@@ -71,8 +79,10 @@ yn2 : 1
 xn2 : 1 
 xn1 : 1 
 
-dx/dt = (yn - x)/tau_ear : 1 (unless refractory)
+dx/dt = 3*clip(yn - x, 0, inf)**(1/3)/tau_ear : 1 (unless refractory)
 dthresh/dt = (a * clip(x, 0, inf) - thresh) / tau_thresh : 1
+beta : 1 (constant)
+min_thresh : 1 (linked)
 '''
 
 reset = '''
@@ -94,8 +104,17 @@ ears.a1 = '(-2 * cos(w0)) / a0'  # Coefficient for previous output
 ears.a2 = '(1 - alpha) / a0'  # Coefficient for output two steps back
 
 ears.run_regularly('xn2 = xn1 ; xn1 = xn ; yn2 = yn1 ; yn1 = yn', dt=defaultclock.dt, when='end')
+ears.thresh = np.ones(2 * nb_band)  # Initialize thresholds
 
-ears.thresh = np.ones(2 * nb_band) * 5000  # Initialize thresholds
+eqs_thresh = '''
+dnoiselevel/dt = (clip(x_in, 0, inf) - noiselevel) / (50*ms) : 1
+x_in : 1 (linked)
+'''
+adaptive_thresh = NeuronGroup(2 * nb_band, eqs_thresh, method='euler', name='adaptive_thresh')
+adaptive_thresh.x_in = linked_var(ears, 'x')
+
+ears.min_thresh = linked_var(adaptive_thresh, 'noiselevel')
+ears.beta = 2  
 
 # NEURONS
 
@@ -103,9 +122,9 @@ eqs_neurons = '''
 dv/dt = -v / tau : 1
 '''
 neurons = NeuronGroup(num_neurons * nb_band, eqs_neurons, threshold='v>1',
-                       reset='v=0', name='neurons', method='euler',refractory=10*ms)
+                       reset='v=0', name='neurons', method='euler')
 # Connect ears to neurons
-synapses = Synapses(ears, neurons, on_pre='v += .65')
+synapses = Synapses(ears, neurons, on_pre='v += .6')
 synapses.connect('i % nb_band == j // num_neurons')  
 
 synapses.delay['i//nb_band==0'] = '(1.0*(j%num_neurons))/(num_neurons-1)*1.1*max_delay'
@@ -116,31 +135,24 @@ synapses.delay['i//nb_band==1'] = '(1.0*(num_neurons-(j%num_neurons)-1))/(num_ne
 eqs_radar = '''
 dv/dt = -v / tau_radar: 1
 '''
-
-radar = NeuronGroup(num_radar * nb_band, eqs_radar, threshold='v>1', method='euler', name='radar', reset='v=0', dt=5*defaultclock.dt)
+radar = NeuronGroup(num_neurons, eqs_radar, threshold='v>1', method='euler', name='radar', reset='v=0', dt=5*defaultclock.dt)
 radar_synapses = Synapses(neurons, radar, on_pre='v += 0.65')
-radar_synapses.connect(condition='j == i//(num_neurons//num_radar)')
+radar_synapses.connect(condition='j == i%num_neurons')
 
-# COMBINATION
-
-eqs_combi = '''
-dv/dt = -v / tau_radar : 1
-'''
-combination = NeuronGroup(num_radar, eqs_combi, threshold='v>1', reset='v=0', method='euler', name='combination', dt=5*defaultclock.dt)
-combination_synapses = Synapses(radar, combination, on_pre='v += 0.65')
-combination_synapses.connect('j == i // nb_band') 
+wta = Synapses(radar, radar, on_pre='v -= 0.65')  
+wta.connect(condition='i != j')
 
 # DIRECTION DETECTION
 
 eqs_direction = '''
-dv/dt = clip(-v, -max_vel, max_vel) / tau_direction : 1
+dv/dt = -v / tau_direction : 1
 dvel/dt = (v - vel) / tau_target : 1
 '''
 
 direction = NeuronGroup(num_direction, eqs_direction, method='euler', name='direction', dt=5*defaultclock.dt)
-direction_synapses = Synapses(combination, direction, on_pre='v += alpha_vel * ((abs(i-((num_radar-1)/2))/((num_radar-1)/2))-a_front)')
+direction_synapses = Synapses(radar, direction, on_pre='v += alpha_vel * ((abs(i-((num_neurons-1)/2))/((num_neurons-1)/2))-a_front)')
 direction_synapses.connect(i=np.arange(0,max_front,dtype=int), j=0)
-direction_synapses.connect(i=np.arange(min_front,num_radar,dtype=int), j=1)
+direction_synapses.connect(i=np.arange(min_front,num_neurons,dtype=int), j=1)
 
 # COMMAND MOTOR
 
@@ -152,17 +164,16 @@ veldiff = vel_left - vel_right : 1 (constant over dt)
 radian = NeuronGroup(1, eqs_rad)
 radian.vel_left = linked_var(direction, 'vel', [0])
 radian.vel_right = linked_var(direction, 'vel', [1]) 
+ears.angular_speed = linked_var(radian, 'veldiff')
 
 # MONITORS
 
 ears_spikes = SpikeMonitor(ears)
 neuron_spikes = SpikeMonitor(neurons)
 radar_spikes = SpikeMonitor(radar)
-combi_spikes = SpikeMonitor(combination)
 
-ears_state = StateMonitor(ears, ['yn', 'yn1', 'yn2', 'xn', 'xn1', 'xn2', 'x', 'thresh'], record=True)
+ears_state = StateMonitor(ears, ['yn', 'yn1', 'yn2', 'xn', 'xn1', 'xn2', 'x', 'thresh', 'delay'], record=True)
 radar_state = StateMonitor(radar, 'v', record=True)
-combi_state = StateMonitor(combination, 'v', record=True)
 dire_state = StateMonitor(direction, ['v', 'vel'], record=True)
 radian_state = StateMonitor(radian, 'veldiff', record=True)
 
@@ -171,17 +182,27 @@ run(10*second)
 
 print(device._last_run_time)
 
-import numpy as np
-import matplotlib.pyplot as plt
+
 # Plotting the results
 plt.figure(figsize=(12, 8))
-for y in ears_state.yn:
-    y_fft = np.fft.fft(y)
-    y_fft = np.abs(y_fft[:len(y_fft)//2])  # Take the positive frequencies
-    x = np.fft.fftfreq(len(y), d=defaultclock.dt)[:len(y_fft)]  # Frequency axis
-    plt.plot(x, y_fft, label='Ear Output FFT')
-plt.xlabel('Frequency (Hz)')
-plt.ylabel('Amplitude')
-plt.title('FFT of Ear Outputs')
+plt.subplot(3, 1, 1)
+plt.plot(ears_state.t / second, ears_state.xn[0], label='Ear 1 x')
+plt.plot(ears_state.t / second, ears_state.xn[nb_band], label='Ear 2 x')
+plt.title('Ears x')
+plt.xlabel('Time (s)')
+plt.ylabel('x')
+plt.legend()    
+plt.subplot(3, 1, 2)
+plt.plot(radian_state.t / second, radian_state.veldiff[0], label='Direction Left vel')
+plt.title('Direction Velocities')
+plt.xlabel('Time (s)')
+plt.ylabel('Velocity')
 plt.legend()
+plt.subplot(3, 1, 3)
+plt.plot(ears_state.t / second, ears_state.delay[0], label='Ear 1 Real Delay')
+plt.title('Ears Real Delay')
+plt.xlabel('Time (s)')
+plt.ylabel('Real Delay')
+plt.legend()
+plt.tight_layout()
 plt.show()
