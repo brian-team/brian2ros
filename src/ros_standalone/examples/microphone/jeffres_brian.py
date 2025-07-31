@@ -40,17 +40,16 @@ tau = 0.4*ms
 
 # RADAR PARAMETERS
 tau_radar = 5 * ms
-num_radar = 15
 
 # DIRECTION PARAMETERS
 num_direction = 2 # Left and Right
 tau_direction = 5 * ms  
 tau_target = 50 * ms
 max_vel = 1.82 
-alpha_vel = 2 # acceleration factor
+alpha_vel = 1 # acceleration factor
 a_front = 0.05 # Determines the front
-min_front = num_radar//2 - np.floor(num_radar*a_front/2)
-max_front = (num_radar//2 + np.floor(num_radar*a_front/2)) + 1
+min_front = num_neurons//2 - np.floor(num_neurons*a_front/2)
+max_front = (num_neurons//2 + np.floor(num_neurons*a_front/2)) + 1
 
 # EARS
 
@@ -90,7 +89,7 @@ x = 0
 thresh = p * thresh + lam * x
 '''
 
-ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>5000',reset=reset,
+ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>min_thresh',reset=reset,
                     name='ears', method='euler',refractory=0.5*ms)
 ears.distance = concatenate((ones(nb_band) * -0.5 * max_delay, ones(nb_band) * 0.5 * max_delay)) * second
 ears.f_center = ' f_min * (f_max / f_min) ** ((i%nb_band) / (nb_band - 1))'  # Logarithmic spacing of frequencies
@@ -172,7 +171,7 @@ ears_spikes = SpikeMonitor(ears)
 neuron_spikes = SpikeMonitor(neurons)
 radar_spikes = SpikeMonitor(radar)
 
-ears_state = StateMonitor(ears, ['yn', 'yn1', 'yn2', 'xn', 'xn1', 'xn2', 'x', 'thresh', 'delay'], record=True)
+ears_state = StateMonitor(ears, ['yn', 'yn1', 'yn2', 'xn', 'xn1', 'xn2', 'x', 'thresh', 'delay', 'theta'], record=True)
 radar_state = StateMonitor(radar, 'v', record=True)
 dire_state = StateMonitor(direction, ['v', 'vel'], record=True)
 radian_state = StateMonitor(radian, 'veldiff', record=True)
@@ -185,24 +184,31 @@ print(device._last_run_time)
 
 # Plotting the results
 plt.figure(figsize=(12, 8))
-plt.subplot(3, 1, 1)
+plt.subplot(4, 1, 1)
 plt.plot(ears_state.t / second, ears_state.xn[0], label='Ear 1 x')
 plt.plot(ears_state.t / second, ears_state.xn[nb_band], label='Ear 2 x')
 plt.title('Ears x')
 plt.xlabel('Time (s)')
 plt.ylabel('x')
 plt.legend()    
-plt.subplot(3, 1, 2)
+plt.subplot(4, 1, 2)
 plt.plot(radian_state.t / second, radian_state.veldiff[0], label='Direction Left vel')
 plt.title('Direction Velocities')
 plt.xlabel('Time (s)')
 plt.ylabel('Velocity')
 plt.legend()
-plt.subplot(3, 1, 3)
+plt.subplot(4, 1, 3)
 plt.plot(ears_state.t / second, ears_state.delay[0], label='Ear 1 Real Delay')
 plt.title('Ears Real Delay')
 plt.xlabel('Time (s)')
 plt.ylabel('Real Delay')
+plt.legend()
+plt.subplot(4, 1, 4)
+plt.plot(ears_state.t / second, ears_state.theta[0], label='Ear 1 Theta')
+plt.plot(ears_state.t / second, ears_state.theta[4], label='Ear 2 Theta')
+plt.title('Ears Theta')
+plt.xlabel('Time (s)')
+plt.ylabel('Theta')
 plt.legend()
 plt.tight_layout()
 plt.show()
