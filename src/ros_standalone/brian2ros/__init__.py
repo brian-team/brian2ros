@@ -915,7 +915,6 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
             dt=float(self.defaultclock.dt),
             interface=prefs.devices.ros_standalone.interface,
         )
-
         writer.write("brianros.h", brianros_tmp)
 
         # Generate the main.bash file.

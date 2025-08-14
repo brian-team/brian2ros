@@ -183,10 +183,9 @@ class MyPlugin(Plugin):
         self.plot_array_2d(x,y,monitor_type,add)
         self.current_plot.append({"name": display_choice, "index": indice})
         
-
     def find_file_name(self):
         # Find all files in the results folder that match with any monitor type
-        # Ne pas changer le nom des monitors sinon il ne l'est trouve plus
+        # Ne pas changer le nom des monitors sinon il ne les trouve plus
         folder = Path(RESULT_FOLDER)
         files_name = [f.name for f in folder.iterdir() if f.is_file()]
 

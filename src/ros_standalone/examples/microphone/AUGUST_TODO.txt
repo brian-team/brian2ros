@@ -1,10 +1,10 @@
 11 et 25 aout reunion en distancielle
 
-regarder le qos des publishers
+regarder le qos des publishers DONE
 globalement étudier le temps dans la simulation
 
 - faire un sorte qu'on peut utiliser un monitor sans l'afficher sur l'interface de base mais quand meme avoir ses résultats
-à la fin.
+à la fin. DONE FFOR publishers
 
 - continuer la doc (préciser comment on lance le robot)
 

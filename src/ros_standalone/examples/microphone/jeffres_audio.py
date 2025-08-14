@@ -200,5 +200,5 @@ radar_spikes = SpikeMonitor(radar)
 #combi_state = StateMonitor(combination, 'v', record=True)
 
 
-get_device().publish_monitors([s_yn, dir_vel, s_xn, radian_state, s_noiselevel, spikes, ears_spikes, radar_spikes])
+get_device().publish_monitors([dir_vel, s_xn, radian_state, s_noiselevel, spikes, radar_spikes])
 run(60 * second)

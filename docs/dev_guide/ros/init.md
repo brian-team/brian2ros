@@ -57,3 +57,34 @@ It store all  the data in this object then call the fonction {func}`.create_code
 
 This class are just child of their respective class. They just have the purpose to reduce the time of typing by having some preset.
 This class are adapt for the use of a turtlebot using jazzy with topic named `cmd_vel` (for Twist) and `scan` (for)
+
+
+### compile_source
+
+Sert a remplir tout d'abord les deux fichiers json. Le premier **b_control.txt** sert a transmettre les différentes informations sur les monitors a l'interface. 
+on y trouve les ifnormations sur les **publishers**, les **subscriber**, la **duration**, les **pub_monitors** et les **variable_info**.
+Ensuite ajoute le dossier **msg** au dossier **brian_project**.
+Enfin il lance le **colcon build** avec comme parametre le nombre de cpu disponible la load_limit. Si la **preference** sans interface est validé alors il ne chargera pas le paquet **turtlebot3_gz** et **brian_interface**.
+
+### Data for interface
+Liste des informations envoyées a l'interface.
+
+#### publisher
+    Varibale global d'environnement, qui est remplie lors de l'appel de la fonction **add_publisher**. Contient le nom du publisher, le nom de son topic avec le type de celui-ci, le header_path(?), le taux de rafraichissement, les valeurs d'entrées et la ou les valeurs d'arret
+
+#### subscriber
+    Variable global d'environnement, qui est remplie lors de l'appel de la fonction **add_subscriber**. Contient le nom du subscriber, le nom de son topic avec le type de celui-ci, le header_path(?), le nom entier de la variable de temps associé a ce subscriber et les valeurs de sorties
+
+#### duration
+    Store the duration of the simulation
+
+#### pub_monitors
+    Variable global d'environnement, qui est remplie lors de l'appel de la fonction **publish_monitors**. A pour but de contenir le nom et le type de chaque monitor.
+    Les types de chaque monitor sont les suivants :
+    - StateMonitor : FloatStateMonitor
+    - SpikeMonitor : Float64
+    - PopulationRateMonitor : Float64
+
+#### variable_info
+    Part of the variable modifier so it's in building.
+    Ajoute le nom, le type et la dimension de toute les variables de tout les NeuronGroup qui appartiennent au **stateupdater**, qui appartiennent a **ArrayVariable** et qui ne sont pas en read_only.
