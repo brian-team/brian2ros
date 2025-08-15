@@ -48,16 +48,20 @@ const size_t _vectorisation_idx = _idx;
 {% endfor %}
 {{count}}[_idx-_source_start]++;
 
-//================================//
-// This code is add by brian2ros //
-//================================//
+{% for monitor in pub_monitors %}
+    {% if owner.name == monitor["name"] %}
+        //================================//
+        // This code is add by brian2ros //
+        //================================//
 
-// Publish every time there is a spike
-auto message = std_msgs::msg::Float64();
-message.data =_idx; 
-ros_obj->publisher_{{owner.name}}->publish(message);
+        // Publish every time there is a spike
+        auto message = std_msgs::msg::Float64();
+        message.data =_idx; 
+        ros_obj->publisher_{{owner.name}}->publish(message);
 
-//================================//
+        //================================//
+    {% endif %}
+{% endfor %}
 }
 {{N}} += _num_events;
 }

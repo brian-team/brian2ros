@@ -33,16 +33,22 @@ _num_spikes = _end_idx - _start_idx;
 {{_dynamic_rate}}.push_back(1.0*_num_spikes/{{_clock_dt}}/_num_source_neurons);
 {{_dynamic_t}}.push_back({{_clock_t}});
 
-//================================//
-// This code is add by brian2ros //
-//================================//
+{% for monitor in pub_monitors %}
+    {% if owner.name == monitor["name"] %}
 
-// Publish the rate to monitate the rate of spikes
-auto message = std_msgs::msg::Float64();
-message.data = 1.0*_num_spikes/{{_clock_dt}}/_num_source_neurons; 
-ros_obj->publisher_{{owner.name}}->publish(message);
+        //================================//
+        // This code is add by brian2ros //
+        //================================//
 
-//================================//
+        // Publish the rate to monitate the rate of spikes
+        auto message = std_msgs::msg::Float64();
+        message.data = 1.0*_num_spikes/{{_clock_dt}}/_num_source_neurons; 
+        ros_obj->publisher_{{owner.name}}->publish(message);
+
+        //================================//
+
+    {% endif %}
+{% endfor %}
 
 {{N}}++;
 {% endblock %}

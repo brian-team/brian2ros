@@ -194,6 +194,8 @@ radian_state = StateMonitor(radian, 'veldiff', record=True)
 ears_spikes = SpikeMonitor(ears)
 spikes = SpikeMonitor(neurons)
 radar_spikes = SpikeMonitor(radar)
+
+neurons_rate = PopulationRateMonitor(neurons)
 #combi = SpikeMonitor(combination)
 
 # Ne peut pas etre utilise en un seul state monitor
