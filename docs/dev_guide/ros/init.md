@@ -38,7 +38,7 @@ It store all  the data in this object then call the fonction {func}`.create_code
         - make brian and ros time the same 
         - add the output variable to the brian code 
 
-### add_subscriber
+#### add_subscriber
 - check if a header is given, if not look in the HEADER_FILES to see if the header is already know 
 
 - create a variable to store the time of the ROS topic 
@@ -49,14 +49,40 @@ It store all  the data in this object then call the fonction {func}`.create_code
     - update the `outs` variable of arg
 - add all the information in the templater
 
-## Misc
-
 ### HEADER_FILE
 
-## LaserScanSubscriber and TwistPublisher
+HEADER_FILE est un dictionnaire avec un nombre conséquent d'header. Les header sont les adresses des fichier .hpp décrivant les types de messages qu'utilise un topic. Ce dict a pour but de faciliter l'utilisation d'un topic car cela permet de ne pas avoir à  chercher le header file dans le cas où celui ci est présent dans le dictionnaire.
+
+### Preferences
+
+Tout comme dans Brian2 avec cpp_standalone, Brian2ROS donne la possibilité d'ajouter des préferences en début de script python.
+- cyclonedds : (t/F) permet de determiner si la communication avec le robot doit se faire avec cyclonedds ou non. De base ROS2 jazzy utilise FastDDS pour la communication.
+- network_interface : ???
+- list_address_ip : (list) permet d'ajouter des addresses IP pour permettre la communication. S'utilise principalement avec CycloneDDS.
+- interface : (T/f) permet de choisir si on affiche l'interface ou non. si l'interface n'est pas activer (false) les packages gazebo et de l'interface ne seront pas chargé.
+- buffer_multiplier (int,10) permet de modifier la taille du buffer circulaire. C'est un multiplicateur donc il prendra la taille du buffer d'entrée et la multipliera.
+
+### LaserScanSubscriber and TwistPublisher
 
 This class are just child of their respective class. They just have the purpose to reduce the time of typing by having some preset.
-This class are adapt for the use of a turtlebot using jazzy with topic named `cmd_vel` (for Twist) and `scan` (for)
+This class are adapt for the use of a turtlebot using jazzy with topic named `cmd_vel` (for Twist) and `scan` (for LaserScan).
+
+
+### __init__
+Dans l'initialisation de la classe ROSStandaloneDevice, qui hérite de la classe CPPStandalone, on a :
+- self.headers : tableau de CPPStandalone qui a pour but de déterminer tout les includes a ajjouter au debut de chaque fichier du dossier code_objects. Ici on y ajoute brianros.h pour avoir accés a ses publishers et subscribers et deux messages float64.hpp et float_state_monitor.hpp. Ce dernier correspond a un message créer pour correspondre au format des monitors.
+- Création de variable d'environnement pour stocker les informations sur les publishers, les subscriber, les monitors et les variables pour le modificateur de variable. Ces variables d'environnements seront ensuite utilisé pour le fichier .json.
+
+### build
+Fonction de CPPStandalone qui a été surchargé 
+
+### network_run 
+Fonction de CPPStandalone qui a été surchargé uniquement dans le but de récuperer le temps de simulation.
+
+### generate_makefile
+Fonction de CPPStandalone qui a été surchargé pour permettre la creation d'un fichier CMake plutot qu'un fichier Make (originalement créer par CPPStandalone). Egalement si la préférence cyclonedds est active (true), crée un fichier cyclone_profile.xml pour établir la communication.
+
+### publish_monitors
 
 
 ### compile_source

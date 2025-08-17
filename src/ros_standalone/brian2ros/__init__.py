@@ -275,8 +275,6 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
         # Derive a new templater specific to ROS from the existing code object templater.
         self.code_object_class().templater = self.templater
 
-
-
         # Initialize a list to hold the monitor configurations.
         # This list is a global template which can be used in all the project file
         self.templater.env.globals["pub_monitors"] = []
