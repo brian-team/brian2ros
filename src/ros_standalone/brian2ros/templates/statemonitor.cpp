@@ -72,6 +72,11 @@
             message_{{varname}}.header.stamp.sec = seconds_{{varname}};
             message_{{varname}}.header.stamp.nanosec = nanoseconds_{{varname}};
             ros_obj->publisher_{{owner.name+"_"+varname}}->publish(message_{{varname}});
+
+            //Debug Time
+            ros_obj->timefile << "ots_{{owner.name+"_"+varname}}:" <<
+            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
+            << std::endl;
     //================================//
 
             {% endif %}

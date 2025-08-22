@@ -151,7 +151,7 @@ public:
     void {{publisher["name"]}}_pub_callback(){
 
         // Debug Time
-        timefile << "in_time_pub_{{publisher["name"]}} : " <<
+        timefile << "itp_{{publisher["name"]}} : " <<
         std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
         << std::endl;
 
@@ -169,7 +169,7 @@ public:
         publisher_{{publisher["name"]}}->publish(message);   
         
         // Debug Time
-        timefile << "out_time_pub_{{publisher["name"]}} : " <<
+        timefile << "otp_{{publisher["name"]}} : " <<
         std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
         << std::endl;
     }
@@ -183,7 +183,7 @@ public:
             
             // Debug Time
             
-            timefile << "in_time_sub_{{subscriber["name"]}} : " <<
+            timefile << "itsb_{{subscriber["name"]}}:" <<
             std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
             << std::endl;
 
@@ -224,7 +224,7 @@ public:
             brian::{{subscriber["var_time"]}}[0] = (double)(current_time - {{subscriber["name"]}}_start);
 
             // Debug Time
-            timefile << "out_time_sub_{{subscriber["name"]}} : " << std::endl;
+            timefile << "otsb_{{subscriber["name"]}}:" << std::endl;
             timefile <<
             std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
             << std::endl;

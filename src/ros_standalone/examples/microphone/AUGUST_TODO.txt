@@ -13,3 +13,18 @@ globalement étudier le temps dans la simulation / étudier le délai
 - pour spikemonitor de neuron pour l'affichage rapport avoir plus le delay/orientation a la place de l'indice
 
 - a la place des spike avoir un taux de décharge lissé comme la fonction de population rate monitor
+
+
+DEBUG TIME 
+
+ots = out time state
+its = in time state
+
+otsp = out time spike
+itsp = in time spike
+
+otp = out time publisher
+itp = in time publisher
+
+otsb = out time subscriber
+itsb = in time subscriber
