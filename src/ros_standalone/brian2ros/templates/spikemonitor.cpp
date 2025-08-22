@@ -53,7 +53,7 @@ const size_t _vectorisation_idx = _idx;
         //================================//
         // This code is add by brian2ros //
         //================================//
-
+        
         // Publish every time there is a spike
         auto message = std_msgs::msg::Float64();
         message.data =_idx; 

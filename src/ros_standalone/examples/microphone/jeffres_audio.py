@@ -173,11 +173,9 @@ wheel = TwistPublisher(
     input={"angular.z": radian.veldiff},
 )
 get_device().add_publisher(wheel) 
-
-s_yn = StateMonitor(ears, 'yn', record=True)
+state_ears = StateMonitor(ears, ['yn', 'xn'], record=True)
 #s_yn1 = StateMonitor(ears, 'yn1', record=True)
 #s_yn2 = StateMonitor(ears, 'yn2', record=True)
-s_xn = StateMonitor(ears, 'xn', record=True)   
 #s_xn1 = StateMonitor(ears, 'xn1', record=True)
 #s_xn2 = StateMonitor(ears, 'xn2', record=True)
 #son = StateMonitor(ears, 'x', record=True)
@@ -191,6 +189,7 @@ s_noiselevel = StateMonitor(adaptive_thresh, 'noiselevel', record=True)
 dir_vel = StateMonitor(direction, 'vel', record=True)
 
 radian_state = StateMonitor(radian, 'veldiff', record=True)
+
 ears_spikes = SpikeMonitor(ears)
 spikes = SpikeMonitor(neurons)
 radar_spikes = SpikeMonitor(radar)
@@ -198,9 +197,8 @@ radar_spikes = SpikeMonitor(radar)
 neurons_rate = PopulationRateMonitor(neurons)
 #combi = SpikeMonitor(combination)
 
-# Ne peut pas etre utilise en un seul state monitor
 #combi_state = StateMonitor(combination, 'v', record=True)
 
 
-get_device().publish_monitors([dir_vel, s_xn, radian_state, s_noiselevel, spikes, radar_spikes])
+get_device().publish_monitors([state_ears, dir_vel, radian_state, s_noiselevel, spikes, radar_spikes])
 run(60 * second)

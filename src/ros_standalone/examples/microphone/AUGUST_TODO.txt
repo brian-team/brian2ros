@@ -1,10 +1,12 @@
 11 et 25 aout reunion en distancielle
 
 regarder le qos des publishers DONE
-globalement étudier le temps dans la simulation
+globalement étudier le temps dans la simulation / étudier le délai
 
 - faire un sorte qu'on peut utiliser un monitor sans l'afficher sur l'interface de base mais quand meme avoir ses résultats
 à la fin. DONE
+
+- faire en sorte qu'on puisse n'utiliser qu'un seul moniteur par Neurongroup DONE
 
 - continuer la doc (préciser comment on lance le robot)
 

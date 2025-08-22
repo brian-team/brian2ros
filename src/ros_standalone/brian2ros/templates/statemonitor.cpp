@@ -39,35 +39,43 @@
 
 
     //================================//
-    // This code is add by brian2ros //
+    // This code is add by brian2ros  //
     //================================//
 
     // Publish the ask recorded variables
         _message_record_{{varname}}[_i] =_to_record_{{varname}};
+    //================================//
+
         {% endfor %}
-    }    
-    {% for monitor in pub_monitors %}
+    }
+    using brian_project::msg::FloatStateMonitor; 
+    {% for monitor in pub_monitors %}            
         {% for varname, var in _recorded_variables | dictsort %}
             {% if owner.name+"_"+varname == monitor["name"]%}
 
-            using brian_project::msg::FloatStateMonitor;
+    //================================//
+    // This code is add by brian2ros  //
+    //================================//
+
+    // Publish the ask recorded variables
             FloatStateMonitor message_{{varname}};
             message_{{varname}}.array.layout.dim.push_back(std_msgs::msg::MultiArrayDimension());
             message_{{varname}}.array.layout.dim[0].size = _num_indices;
             message_{{varname}}.array.data = _message_record_{{varname}};
 
-            static double start_time = std::chrono::duration<double>(
+            static double start_time_{{varname}} = std::chrono::duration<double>(
             std::chrono::system_clock::now().time_since_epoch()).count();
-            double time_in_seconds = {{_clock_t}} + start_time;
-            int32_t seconds = static_cast<int32_t>(time_in_seconds);
-            uint32_t nanoseconds = static_cast<uint32_t>((time_in_seconds - seconds) * 1e9);
+            double time_in_seconds_{{varname}} = {{_clock_t}} + start_time_{{varname}};
+            int32_t seconds_{{varname}} = static_cast<int32_t>(time_in_seconds_{{varname}});
+            uint32_t nanoseconds_{{varname}} = static_cast<uint32_t>((time_in_seconds_{{varname}} - seconds_{{varname}}) * 1e9);
 
-            message_{{varname}}.header.stamp.sec = seconds;
-            message_{{varname}}.header.stamp.nanosec = nanoseconds;
+            message_{{varname}}.header.stamp.sec = seconds_{{varname}};
+            message_{{varname}}.header.stamp.nanosec = nanoseconds_{{varname}};
             ros_obj->publisher_{{owner.name+"_"+varname}}->publish(message_{{varname}});
+    //================================//
+
             {% endif %}
             {% endfor %}
-    //================================//
     {% endfor %}
     {{N}} = _new_size;
 
