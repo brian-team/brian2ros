@@ -68,12 +68,18 @@ public:
     bool {{subscriber["name"]}}_test = false;
     int {{subscriber["name"]}}_count = 0;
     {% endfor %}
+    std::ofstream timefile;
 
-    
 
 
     ROS() : Node("ros_brian")
-    {   
+    {    
+        // Debug Time
+        timefile.open("debug/debug_time.txt", std::ios::app);
+        if (!timefile.is_open()) {
+            std::cerr << "Erreur : impossible d'ouvrir le fichier." << std::endl;
+            return;
+        }
         rclcpp::QoS qos_realtime_sub(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
         qos_realtime_sub
             .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
@@ -127,6 +133,7 @@ public:
         {
             std::cout << "Stopping simulation..." << std::endl;
             Network::_globally_stopped = true;
+            timefile.close();
         }
         else if (command  == "shutdown")
         {
@@ -143,6 +150,11 @@ public:
     {% for publisher in publishers %}
     void {{publisher["name"]}}_pub_callback(){
 
+        // Debug Time
+        timefile << "in_time_pub_{{publisher["name"]}} : " <<
+        std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
+        << std::endl;
+
         // This function is called every time the timer is triggered
         // It will publish the message to the topic
         auto message = {{publisher["topic_type"]}}();
@@ -154,7 +166,12 @@ public:
                     message.{{reset["name"]}} = {{reset["value"]}};
                 }
         {% endfor %}
-        publisher_{{publisher["name"]}}->publish(message);        
+        publisher_{{publisher["name"]}}->publish(message);   
+        
+        // Debug Time
+        timefile << "out_time_pub_{{publisher["name"]}} : " <<
+        std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
+        << std::endl;
     }
     {% endfor %}
 
@@ -164,6 +181,12 @@ public:
             // This function is called every time a message is received from the topic
             // It will set the values of the variables in the brian object
             
+            // Debug Time
+            
+            timefile << "in_time_sub_{{subscriber["name"]}} : " <<
+            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
+            << std::endl;
+
             // Time calculation
             // This is used to calculate the time between the start of gazebo and the first message
             if(!{{subscriber["name"]}}_test){
@@ -199,6 +222,13 @@ public:
                 {% endif %}
             {% endfor %}
             brian::{{subscriber["var_time"]}}[0] = (double)(current_time - {{subscriber["name"]}}_start);
+
+            // Debug Time
+            timefile << "out_time_sub_{{subscriber["name"]}} : " << std::endl;
+            timefile <<
+            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
+            << std::endl;
+
         }
     {%endfor%}
 };

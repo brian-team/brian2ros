@@ -966,6 +966,17 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                     ) % xmsg
 
                     raise RuntimeError(error_message)
+                
+                xdebug = os.system(
+                    'cd ' + self.file_path + '/../../ && mkdir -p src/brian_project/debug'
+                )
+                if xdebug != 0:
+                    error_message = (
+                        "Error in construction of debug directory (error " "code: %u)."
+                    ) % xdebug
+
+                    raise RuntimeError(error_message)
+                
                 nb_cpu = os.cpu_count() or 1
                 print(f"\033[35m➤ Number of CPU detected : {str(nb_cpu)}\033[0m")
 
