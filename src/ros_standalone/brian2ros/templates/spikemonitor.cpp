@@ -60,7 +60,7 @@ const size_t _vectorisation_idx = _idx;
         ros_obj->publisher_{{owner.name}}->publish(message);
 
         //Debug Time
-        ros_obj->timefile << "otsp_{{owner.name+"_"+varname}}:" <<
+        ros_obj->timefile << "otsp_{{owner.name}}:" <<
         std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
         << std::endl;
         //================================//

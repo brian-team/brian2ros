@@ -182,9 +182,8 @@ dir_vel = StateMonitor(direction, 'vel', record=True)
 radian_state = StateMonitor(radian, 'veldiff', record=True)
 
 ears_spikes = SpikeMonitor(ears)
-spikes = SpikeMonitor(neurons)
+neurons_spikes = SpikeMonitor(neurons)
 radar_spikes = SpikeMonitor(radar)
-direction_spikes = SpikeMonitor(direction)
 
-get_device().publish_monitors([state_ears, dir_vel, radian_state, s_noiselevel, spikes, radar_spikes])
+get_device().publish_monitors([state_ears, dir_vel, radian_state, s_noiselevel, neurons_spikes, radar_spikes])
 run(60 * second)
