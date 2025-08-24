@@ -83,7 +83,18 @@ Fonction de CPPStandalone qui a été surchargé uniquement dans le but de récu
 Fonction de CPPStandalone qui a été surchargé pour permettre la creation d'un fichier CMake plutot qu'un fichier Make (originalement créer par CPPStandalone). Egalement si la préférence cyclonedds est active (true), crée un fichier cyclone_profile.xml pour établir la communication.
 
 ### publish_monitors
-Fonction appelé dans le script python et qui a pour but d'entrer dans la variable d'environnement "pub_monitor" les informations des monitors qui ont été choisi par l'utilisateur pour être disponible pendant la simulation. Les monitors qui n'ont pas été entré dans cette fonction seront néanmoins disponible dans l'af
+Fonction appelé dans le script python et qui a pour but d'entrer dans la variable d'environnement "pub_monitor" les informations des monitors qui ont été choisi par l'utilisateur pour être disponible pendant la simulation. Les monitors qui n'ont pas été entré dans cette fonction seront néanmoins disponible dans le visionneur de résultat.
+Affiche également dans le terminal le nombre de monitor qui ont été correctement initialisé.
+
+### detect
+Cette méthode a deux fonction. La première est de detecter les variables qui seront modifiable entre chaque simulation et de les ajouter dans la variable d'environnement "variable_info".
+La deuxieme est de chercher parmi les éléments de codeobj pour y trouver tout les Subscribers présent dans le script afin de les regrouper dans un set. On applique ensuite ce set dans la méthode add_subscriber. Cela est nécessaire car on ne fait pas un appel explicite a la méthode dans le script, ce qui est le cas à l'inverse de add_publisher.
+
+### generate_objects_source
+Fonction de CPPStandalone qui a été surchargé dans le but de lancer self.detect avant la generation des différents objets de la simulation.
+
+### generate_main_source 
+Fonction de CPPStandalone qui a été surchargé dans le but de generer les fichiers brianros.h et main.bash.
 
 ### compile_source
 
@@ -114,3 +125,6 @@ Liste des informations envoyées a l'interface.
 #### variable_info
     Part of the variable modifier so it's in building.
     Ajoute le nom, le type et la dimension de toute les variables de tout les NeuronGroup qui appartiennent au **stateupdater**, qui appartiennent a **ArrayVariable** et qui ne sont pas en read_only.
+
+### run
+Fonction de CPPStandalone qui a été surchargé et qui va lancer le fichier main.bash.

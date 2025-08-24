@@ -139,7 +139,6 @@ prefs.register_preferences(
 
 )
 
-
 class Publisher:
     """Create and configure a ROS publisher.
 
@@ -180,7 +179,6 @@ class TwistPublisher(Publisher):
     def __init__(self, input, rate=500, reset_values={}, name=None, header=None):
         super().__init__(topic="cmd_vel", topic_type="geometry_msgs/msg/Twist", input=input, rate=rate, reset_values=reset_values, name=name, header=header)
        
-
 class Subscriber(Function):
     """
     Create and configure a ROS subscriber.
@@ -200,10 +198,12 @@ class Subscriber(Function):
     header : str, optional
         Path of the header file to include (default is None).
         It has to be add if the topic is not in the HEADER_FILES list.
+        
     Returns
     -------
     Function
         A function that returns the value of the subscribed topic.
+        
     """
     def __init__(self, name, topic, topic_type, output, header=None):
         super().__init__(self._pose_obj, arg_units=(second, 1), return_unit=1)
