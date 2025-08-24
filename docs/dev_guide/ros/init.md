@@ -83,7 +83,7 @@ Fonction de CPPStandalone qui a été surchargé uniquement dans le but de récu
 Fonction de CPPStandalone qui a été surchargé pour permettre la creation d'un fichier CMake plutot qu'un fichier Make (originalement créer par CPPStandalone). Egalement si la préférence cyclonedds est active (true), crée un fichier cyclone_profile.xml pour établir la communication.
 
 ### publish_monitors
-
+Fonction appelé dans le script python et qui a pour but d'entrer dans la variable d'environnement "pub_monitor" les informations des monitors qui ont été choisi par l'utilisateur pour être disponible pendant la simulation. Les monitors qui n'ont pas été entré dans cette fonction seront néanmoins disponible dans l'af
 
 ### compile_source
 

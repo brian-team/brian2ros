@@ -26,13 +26,13 @@ from PyQt5.QtWidgets import QApplication, QWidget
 
 RESULT_FOLDER = os.path.dirname(os.path.realpath(__file__)).split("/src")[0] + "/src/src/brian_project/results"
 
-class MyPlugin(Plugin):
+class B2R_UI_Plugin(Plugin):
     progress_sim = pyqtSignal(int)
     time = pyqtSignal(str)
 
     def __init__(self, context):
         self.context = context
-        super(MyPlugin, self).__init__(context)
+        super(B2R_UI_Plugin, self).__init__(context)
 
         # Initialize the variables
         self.sim_launch = False
@@ -55,7 +55,7 @@ class MyPlugin(Plugin):
             self.monitors = data["pub_monitors"]
             self.variable_info = data["variable_info"]
 
-        self.setObjectName("MyPlugin")
+        self.setObjectName("B2R_UI_Plugin")
 
         # Create the widget and initialize the UI
         self._widget = QWidget()
@@ -588,7 +588,7 @@ class MyPlugin(Plugin):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MyPlugin(None)  # Pass None as context when testing outside RQT
+    window = B2R_UI_Plugin(None)  # Pass None as context when testing outside RQT
     window._widget.show()
     sys.stderr = open(os.devnull, "w")
 
