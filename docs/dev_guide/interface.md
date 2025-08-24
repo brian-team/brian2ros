@@ -37,6 +37,19 @@ Fonction ayant pour but de verifier si un dossier est vide ou non (renvoie True 
 
 Fonction qui va ouvrir la fenetre de visionnage de resultat. Ne peut etre lancé qu'à la fin de chaque simulation car ne peut etre lancé que si le dossier result est remplie.
 
-### display
 
-Fonction pour ajouter un plot au visionneur de resultat. La fonction va d'abord récupérer le choix selectionné dans la comboBox (menu defilant) puis l'indice demandé par l'utilisateur dans la fenetre de ek
+### find_file_name
+Cette méthode va chercher dans le dossier result tout les fichiers ayant "statemonitor", "spikemonitor" ou "ratemonitor" dans leur nom pour avoir une liste de tout les monitor de la simulation. A chaque monitor on associera un fichier ayant les valeurs temporelles correspondant au monitor. Attention : changer le nom des monitors rend cette méthode inoperante.
+
+### get_value
+Cette méthode a pour but de récuperer les valeurs de chaque fichier donnée pour en ressortir le x et le y. En utilisant la fonction numpy.fromfile elle va récuperer les donnée et va ensuite, en fonction du type de monitor, établir ou non un reshpape du tableau de valeur.
+
+### plot_array_2d
+Cette méthode va utiliser le self.ui_results pour plot les données transmise a la méthode.
+
+### add_display
+Méthode connecté au bouton "+" de l'interface. 
+Fonction pour ajouter un plot au visionneur de resultat. La fonction va d'abord récupérer le choix selectionné dans la comboBox (menu defilant) puis l'indice demandé par l'utilisateur dans la fenetre de texte. Puis va vérifier que ce choix n'a pas déja ete affiché. Puis a partir de ces informations va récupérer les noms des fichiers de l'axe x (le temps) et y (les valeurs obtenue). Ensuite, apres avoir verifier qu'un indice (ou numero de courbe) a été selectionné (seul les spikemonitor n'ont pas besoin d'avoir d'indice car ils ont tout le temps qu'un seul array de valeur) la méthode va récupéré les array x et y grace a self.get_value. Enfin elle va afficher les résultats grâce a la fonction self.plot_array_2d puis va ajouter les information a un tableau nommé self.current_plot qui a pour but de réferencer tout les plot actuellement affiché.
+
+### remove_last_display
+Méthode connecté au bouton "-" de l'interface. 

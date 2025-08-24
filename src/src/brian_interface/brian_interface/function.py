@@ -159,29 +159,7 @@ class B2R_UI_Plugin(Plugin):
     # Function in the show results window
     ##=====
     
-    # Function to add a new plot, called when the user clicks on the show button
-    def display(self,add=False):
-        display_choice = self.ui_results.comboBox.currentText()
-        indice = self.ui_results.textInput.text()
 
-        name_x = self.monitors_name[display_choice]["x"]
-        name_y = self.monitors_name[display_choice]["y"]
-        monitor_type = self.monitors_name[display_choice]["type"]
-
-        try:
-            if monitor_type == "spikemonitor":
-                # For spikemonitor, we don't need an index
-                indice = None
-            else:
-                indice = int(indice)
-        except ValueError:
-            print("\033[31m ❌ Invalid index, please enter a valid integer \033[0m")
-            return
-        
-        x,y = self.get_value(name_x, name_y, monitor_type, indice)
-
-        self.plot_array_2d(x,y,monitor_type,add)
-        self.current_plot.append({"name": display_choice, "index": indice})
         
     def find_file_name(self):
         # Find all files in the results folder that match with any monitor type
@@ -212,7 +190,7 @@ class B2R_UI_Plugin(Plugin):
 
         return res
             
-    def get_value(self, fname_x, fname_y, monitor_type, indice):
+    def get_value(self, fname_x, fname_y, monitor_type, new_indice):
 
         with open(fname_x, "rb") as f_x:
             data_x = np.fromfile(f_x, dtype=np.float64)
@@ -237,14 +215,12 @@ class B2R_UI_Plugin(Plugin):
             resh_value = len(data_y) // len(data_x)
             data_y = data_y.reshape(-1, resh_value).T
 
-        if indice is not None:
-            return data_x, data_y[indice]
+        if new_indice is not None:
+            return data_x, data_y[new_indice]
         else:
             return data_x, data_y
 
-    def plot_array_2d(self, x, y, monitor_type,add=False):
-        if not add:
-            self.ui_results.plot.ax.clear()
+    def plot_array_2d(self, x, y, monitor_type):
         if monitor_type == "spikemonitor":
             self.ui_results.plot.ax.plot(x, y, '.')
         elif monitor_type == "ratemonitor":
@@ -256,8 +232,11 @@ class B2R_UI_Plugin(Plugin):
         self.ui_results.plot.ax.set_ylabel("Value")
         self.ui_results.plot.figure.tight_layout()
         self.ui_results.plot.draw()
-
+        
+    # Function to add a new plot, called when the user clicks on the show button
     def add_display(self):
+
+        # Check if plot is already displayed
         new_display = self.ui_results.comboBox.currentText()
         new_indice = self.ui_results.textInput.text()
         for plot in self.current_plot:
@@ -265,7 +244,24 @@ class B2R_UI_Plugin(Plugin):
                 print("\033[31m ❌ This plot is already displayed \033[0m")
                 return
         
-        self.display(add=True)
+        name_x = self.monitors_name[new_display]["x"]
+        name_y = self.monitors_name[new_display]["y"]
+        monitor_type = self.monitors_name[new_display]["type"]
+
+        try:
+            if monitor_type == "spikemonitor":
+                # For spikemonitor, we don't need an index
+                new_indice = None
+            else:
+                new_indice = int(new_indice)
+        except ValueError:
+            print("\033[31m ❌ Invalid index, please enter a valid integer \033[0m")
+            return
+        
+        x,y = self.get_value(name_x, name_y, monitor_type, new_indice)
+
+        self.plot_array_2d(x,y,monitor_type)
+        self.current_plot.append({"name": new_display, "index": new_indice})
 
     def remove_last_display(self):
         if len(self.current_plot) == 0:
@@ -280,7 +276,7 @@ class B2R_UI_Plugin(Plugin):
                 x,y = self.get_value(self.monitors_name[name]["x"],self.monitors_name[name]["y"], self.monitors_name[name]["type"], None)
             else:
                 x,y = self.get_value(self.monitors_name[name]["x"], self.monitors_name[name]["y"], self.monitors_name[name]["type"], plot["index"])
-            self.plot_array_2d(x, y, self.monitors_name[name]["type"], add=True)
+            self.plot_array_2d(x, y, self.monitors_name[name]["type"])
         self.ui_results.plot.figure.tight_layout()
         self.ui_results.plot.draw()
 
