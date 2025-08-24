@@ -224,8 +224,7 @@ public:
             brian::{{subscriber["var_time"]}}[0] = (double)(current_time - {{subscriber["name"]}}_start);
 
             // Debug Time
-            timefile << "otsb_{{subscriber["name"]}}:" << std::endl;
-            timefile <<
+            timefile << "otsb_{{subscriber["name"]}}:" <<
             std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
             << std::endl;
 
