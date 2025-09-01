@@ -107,7 +107,7 @@ ears.a1 = '(-2 * cos(w0)) / a0'  # Coefficient for previous output
 ears.a2 = '(1 - alpha) / a0'  # Coefficient for output two steps back
 ears.run_regularly('xn2 = xn1 ; xn1 = xn ; yn2 = yn1 ; yn1 = yn', dt=defaultclock.dt, when='end')
 
-ears.thresh = np.ones(2 * nb_band)  # Initialize thresholds
+ears.thresh = np.ones(2 * nb_band) * 32767  # Initialize thresholds
 
 eqs_thresh = '''
 dnoiselevel/dt = (clip(x_in, 0, inf) - noiselevel) / (50*ms) : 1
@@ -173,17 +173,17 @@ wheel = TwistPublisher(
     input={"angular.z": radian.veldiff},
 )
 get_device().add_publisher(wheel) 
-state_ears = StateMonitor(ears, ['yn', 'xn', 'thresh', 'x'], record=True)
+#state_ears = StateMonitor(ears, ['yn', 'xn', 'thresh', 'x'], record=True)
 
-s_noiselevel = StateMonitor(adaptive_thresh, 'noiselevel', record=True)
+#s_noiselevel = StateMonitor(adaptive_thresh, 'noiselevel', record=True)
 
-dir_vel = StateMonitor(direction, 'vel', record=True)
+#dir_vel = StateMonitor(direction, 'vel', record=True)
 
-radian_state = StateMonitor(radian, 'veldiff', record=True)
+#radian_state = StateMonitor(radian, 'veldiff', record=True)
 
 ears_spikes = SpikeMonitor(ears)
 neurons_spikes = SpikeMonitor(neurons)
-radar_spikes = SpikeMonitor(radar)
+#radar_spikes = SpikeMonitor(radar)
 
-get_device().publish_monitors([state_ears, dir_vel, radian_state, s_noiselevel, neurons_spikes, radar_spikes])
-run(60 * second)
+#get_device().publish_monitors([state_ears, dir_vel, radian_state, s_noiselevel, neurons_spikes, radar_spikes])
+run(8 * second)

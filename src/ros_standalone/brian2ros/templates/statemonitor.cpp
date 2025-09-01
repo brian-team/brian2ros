@@ -58,6 +58,10 @@
     //================================//
 
     // Publish the ask recorded variables
+            ros_obj->timefile << "its_{{owner.name+"_"+varname}}:" <<
+            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
+            << std::endl;
+            
             FloatStateMonitor message_{{varname}};
             message_{{varname}}.array.layout.dim.push_back(std_msgs::msg::MultiArrayDimension());
             message_{{varname}}.array.layout.dim[0].size = _num_indices;

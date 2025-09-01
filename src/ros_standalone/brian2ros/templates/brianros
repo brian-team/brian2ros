@@ -151,7 +151,7 @@ public:
     void {{publisher["name"]}}_pub_callback(){
 
         // Debug Time
-        timefile << "itp_{{publisher["name"]}} : " <<
+        timefile << "itp_{{publisher["name"]}}:" <<
         std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
         << std::endl;
 
@@ -169,7 +169,7 @@ public:
         publisher_{{publisher["name"]}}->publish(message);   
         
         // Debug Time
-        timefile << "otp_{{publisher["name"]}} : " <<
+        timefile << "otp_{{publisher["name"]}}:" <<
         std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
         << std::endl;
     }
