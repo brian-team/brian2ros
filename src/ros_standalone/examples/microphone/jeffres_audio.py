@@ -30,7 +30,6 @@ lam = 0.7
 a = 1
 p = 1.5
 tau_thresh = 5*ms
-#min_thresh = 3000
 
 # Filter parameters
 f_min = 100 * Hz
@@ -45,7 +44,6 @@ tau = 0.4*ms
 
 # RADAR PARAMETERS
 tau_radar = 5 * ms
-num_radar = 15 # NOT USED
 
 # DIRECTION PARAMETERS
 num_direction = 2 # Left and Right
@@ -177,13 +175,13 @@ get_device().add_publisher(wheel)
 
 #s_noiselevel = StateMonitor(adaptive_thresh, 'noiselevel', record=True)
 
-#dir_vel = StateMonitor(direction, 'vel', record=True)
+dir_vel = StateMonitor(direction, 'vel', record=True)
 
-#radian_state = StateMonitor(radian, 'veldiff', record=True)
+radian_state = StateMonitor(radian, 'veldiff', record=True)
 
 ears_spikes = SpikeMonitor(ears)
 neurons_spikes = SpikeMonitor(neurons)
 #radar_spikes = SpikeMonitor(radar)
 
-#get_device().publish_monitors([state_ears, dir_vel, radian_state, s_noiselevel, neurons_spikes, radar_spikes])
+get_device().publish_monitors([ears_spikes, dir_vel])
 run(8 * second)

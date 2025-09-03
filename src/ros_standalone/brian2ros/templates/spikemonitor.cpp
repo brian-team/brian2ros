@@ -8,6 +8,9 @@
 {% block maincode %}
 //// MAIN CODE ////////////
 {#  Get the name of the array that stores these events (e.g. the spikespace array) #}
+ros_obj->timefilespikemonitor << "i_spike{{owner.name[-1]}}:" + std::to_string(
+std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start)
+<< std::endl;
 {% set _eventspace = get_array_name(eventspace_variable) %}
 
 
@@ -59,18 +62,19 @@ const size_t _vectorisation_idx = _idx;
         message.data =_idx; 
         ros_obj->publisher_{{owner.name}}->publish(message);
 
-        //Debug Time
-        ros_obj->timefile << "otsp_{{owner.name}}:" <<
-        std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
-        << std::endl;
+
         //================================//
     {% endif %}
 {% endfor %}
 }
 {{N}} += _num_events;
 }
-}
 
+}
+//Debug Time
+ros_obj->timefilespikemonitor << "o_spike{{owner.name[-1]}}:" + std::to_string(
+std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start)
+<< std::endl;
 {% endblock %}
 
 {% block extra_functions_cpp %}
@@ -82,10 +86,14 @@ using namespace brian;
 {{pointers_lines|autoindent}}
 std::cout << "Number of spikes: " << {{N}} << endl;
 }
+
 {% endblock %}
 
 {% block extra_functions_h %}
-void _debugmsg_{{codeobj_name}}();
+void _debugmsg_{{codeobj_name}}();  
+
+
+
 {% endblock %}
 
 {% macro main_finalise() %}

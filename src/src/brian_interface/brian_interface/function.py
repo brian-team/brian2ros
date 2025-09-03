@@ -25,6 +25,7 @@ from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QApplication, QWidget
 
 RESULT_FOLDER = os.path.dirname(os.path.realpath(__file__)).split("/src")[0] + "/src/src/brian_project/results"
+DEBUG_FOLDER = os.path.dirname(os.path.realpath(__file__)).split("/src")[0] + "/src/src/brian_project/debug"
 
 class B2R_UI_Plugin(Plugin):
     progress_sim = pyqtSignal(int)
@@ -418,6 +419,8 @@ class B2R_UI_Plugin(Plugin):
         
         if not self.is_file_empty(RESULT_FOLDER):
             self.empty_file(RESULT_FOLDER)
+        if not self.is_file_empty(DEBUG_FOLDER):
+            self.empty_file(DEBUG_FOLDER)
 
         modifier = ""
         for row,var in enumerate(self.variable_info):
@@ -473,7 +476,7 @@ class B2R_UI_Plugin(Plugin):
             preexec_fn=os.setsid,
         )
         # Wait for Gazebo to start
-        time.sleep(5)
+        #time.sleep(5)
         if self.sub.poll() is not None:
             raise Exception(
                 "❌ \033[31m Gazebo failed to start, error code: " + str(self.sub.returncode)

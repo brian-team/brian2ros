@@ -72,10 +72,18 @@
         {{'\n'.join(code_lines['after_end'])|autoindent}}
         auto t_end = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
         std::cout << "Brian simulation finished in " << (t_end - t_start) << " seconds." << std::endl;
+        
         ros_obj->brian_state = false;
         //sleep(1);
         {% for subscriber in subscribers %}
         ros_obj->{{subscriber["name"]}}_test = false;
+        std::cout << "Stopping debug..." << std::endl;
+        ros_obj->timefilebrianros << "end:" + std::to_string(
+        std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count())
+        << std::endl;
+        ros_obj->timefilebrianros.close();
+        ros_obj->timefilestatemonitor.close();
+        ros_obj->timefilespikemonitor.close();
         std::cout << "End of Brian" << std::endl;
         {% endfor %}
     }

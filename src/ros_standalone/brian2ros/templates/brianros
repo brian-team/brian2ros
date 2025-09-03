@@ -68,18 +68,41 @@ public:
     bool {{subscriber["name"]}}_test = false;
     int {{subscriber["name"]}}_count = 0;
     {% endfor %}
-    std::ofstream timefile;
-
+    std::ofstream timefilebrianros;
+    std::ofstream timefilestatemonitor;
+    std::ofstream timefilespikemonitor;
+    std::ofstream timefileobject;
+    uint64_t start;
 
 
     ROS() : Node("ros_brian")
     {    
         // Debug Time
-        timefile.open("debug/debug_time.txt", std::ios::app);
-        if (!timefile.is_open()) {
+        timefilebrianros.open("debug/debug_time_brianros.txt", std::ios::app);
+        if (!timefilebrianros.is_open()) {
             std::cerr << "Erreur : impossible d'ouvrir le fichier." << std::endl;
             return;
         }
+        timefilestatemonitor.open("debug/debug_time_statemonitor.txt", std::ios::app);
+        if (!timefilestatemonitor.is_open()) {
+            std::cerr << "Erreur : impossible d'ouvrir le fichier." << std::endl;
+            return;
+        }
+        timefilespikemonitor.open("debug/debug_time_spikemonitor.txt", std::ios::app);
+        if (!timefilespikemonitor.is_open()) {
+            std::cerr << "Erreur : impossible d'ouvrir le fichier." << std::endl;
+            return;
+        }
+        timefileobject.open("debug/debug_time_object.txt", std::ios::app);
+        if (!timefileobject.is_open()) {
+            std::cerr << "Erreur : impossible d'ouvrir le fichier." << std::endl;
+            return;
+        }
+        // Debug Time
+        start = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+        timefilebrianros << "start:" + std::to_string(
+        start) + "\n";
+        
         rclcpp::QoS qos_realtime_sub(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
         qos_realtime_sub
             .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
@@ -133,14 +156,16 @@ public:
         {
             std::cout << "Stopping simulation..." << std::endl;
             Network::_globally_stopped = true;
-            timefile.close();
         }
         else if (command  == "shutdown")
         {
             std::cout << "Shutting down ROS node..." << std::endl;
             node_executors->cancel();
         }
-      
+        else if (command == "stop_debug")
+        {
+
+        }
         else
         {
             std::cout << "Unknown command: " << command << std::endl;
@@ -151,9 +176,10 @@ public:
     void {{publisher["name"]}}_pub_callback(){
 
         // Debug Time
-        timefile << "itp_{{publisher["name"]}}:" <<
-        std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
-        << std::endl;
+        // timefilebrianros << "itp_{{publisher["name"]}}:" + std::to_string(
+        // std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - start
+        // )
+        // << std::endl;
 
         // This function is called every time the timer is triggered
         // It will publish the message to the topic
@@ -169,9 +195,10 @@ public:
         publisher_{{publisher["name"]}}->publish(message);   
         
         // Debug Time
-        timefile << "otp_{{publisher["name"]}}:" <<
-        std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
-        << std::endl;
+        // timefilebrianros << "otp_{{publisher["name"]}}:" + std::to_string(
+        // std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - start
+        // )
+        // << std::endl;
     }
     {% endfor %}
 
@@ -182,11 +209,8 @@ public:
             // It will set the values of the variables in the brian object
             
             // Debug Time
-            
-            timefile << "itsb_{{subscriber["name"]}}:" <<
-            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
-            << std::endl;
-
+            timefilebrianros << "i_{{subscriber["name"]}}:" + std::to_string(
+            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - start) + "\n";
             // Time calculation
             // This is used to calculate the time between the start of gazebo and the first message
             if(!{{subscriber["name"]}}_test){
@@ -224,9 +248,11 @@ public:
             brian::{{subscriber["var_time"]}}[0] = (double)(current_time - {{subscriber["name"]}}_start);
 
             // Debug Time
-            timefile << "otsb_{{subscriber["name"]}}:" <<
-            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
-            << std::endl;
+            timefilebrianros << "o_{{subscriber["name"]}}:" + std::to_string(
+            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - start) + "\n";
+
+            timefilebrianros << "n_{{subscriber["name"]}}:" + std::to_string(
+            rclcpp::Time(msg->header.stamp).seconds()) + "\n";
 
         }
     {%endfor%}

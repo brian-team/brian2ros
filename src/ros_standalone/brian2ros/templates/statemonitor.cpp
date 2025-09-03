@@ -2,6 +2,11 @@
 {# WRITES_TO_READ_ONLY_VARIABLES { t, N } #}
 {% extends 'common_group.cpp' %}
 {% block maincode %}
+
+    ros_obj->timefilestatemonitor << "i_state{{owner.name[-1]}}:" + std::to_string(
+    std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start)
+    << std::endl;
+
     {{_dynamic_t}}.push_back({{_clock_t}});
 
     const size_t _new_size = {{_dynamic_t}}.size();
@@ -58,9 +63,6 @@
     //================================//
 
     // Publish the ask recorded variables
-            ros_obj->timefile << "its_{{owner.name+"_"+varname}}:" <<
-            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
-            << std::endl;
             
             FloatStateMonitor message_{{varname}};
             message_{{varname}}.array.layout.dim.push_back(std_msgs::msg::MultiArrayDimension());
@@ -77,15 +79,17 @@
             message_{{varname}}.header.stamp.nanosec = nanoseconds_{{varname}};
             ros_obj->publisher_{{owner.name+"_"+varname}}->publish(message_{{varname}});
 
-            //Debug Time
-            ros_obj->timefile << "ots_{{owner.name+"_"+varname}}:" <<
-            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count()
-            << std::endl;
+
     //================================//
 
             {% endif %}
             {% endfor %}
     {% endfor %}
     {{N}} = _new_size;
+
+    //Debug Time
+ros_obj->timefilestatemonitor << "o_state{{owner.name[-1]}}:" + std::to_string(
+    std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start
+) << std::endl;
 
 {% endblock %}
