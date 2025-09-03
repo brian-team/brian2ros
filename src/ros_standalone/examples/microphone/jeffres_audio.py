@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import softmax
 
-prefs.devices.ros_standalone.buffer_multiplier = 7
+prefs.devices.ros_standalone.buffer_multiplier = 1000
 set_device("ros_standalone", directory="src/src/brian_project", debug=True)
 defaultclock.dt = 1 / 48_000 * second
 
@@ -57,9 +57,11 @@ max_front = (num_neurons//2 + np.floor(num_neurons*a_front/2)) + 1
 
 # EARS
 
+inp = NeuronGroup(2, "xn = audio(t, i): 1 (constant over dt)", name='input', dt=defaultclock.dt)
+
 eqs_ears = '''
 f_center : Hz
-xn = audio(t, i // nb_band) : 1 (constant over dt)
+xn : 1 (linked)
 
 w0 : 1 (constant)
 alpha : 1 (constant)
@@ -94,6 +96,7 @@ thresh = p * thresh + lam * x
 
 ears = NeuronGroup(2 * nb_band, eqs_ears, threshold='x>thresh and x>min_thresh * beta',reset=reset,
                     name='ears', method='euler',refractory=0.2*ms)
+ears.xn = linked_var(inp, 'xn', np.repeat(np.arange(2), nb_band))
 ears.f_center = ' f_min * (f_max / f_min) ** ((i%nb_band) / (nb_band - 1))'  # Logarithmic spacing of frequencies
 ears.w0 = '(2 * pi * f_center) / fs'  # Angular frequency
 ears.alpha = 'sin(w0) * sinh((log(2)/2) * BW * (w0 / sin(w0)))'  # Filter coefficient

@@ -245,6 +245,7 @@ class Subscriber(Function):
             //std::cout << "tail_""" + out_name + """ : " << tail_""" + out_name + """ << std::endl;
             while(brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] < previous_frame_id_""" + out_name + """ || brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] == 0){ 
                 std::this_thread::sleep_for(std::chrono::duration<double>(brian::_array_defaultclock_dt[0]));
+                ros_obj->timefileobject << "s_brianaudio:" + std::to_string(std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start) + '\\n\' ;
                 if(Network::_globally_stopped){
                     ros_obj->timefileobject << "o_brian""" + self.name + """:" + std::to_string(std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start) + '\\n\' ;
                     return 0;
