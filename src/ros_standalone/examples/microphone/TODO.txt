@@ -45,6 +45,6 @@ Si rien a faire :
 - Réparer l'horloge de l'interface
 
 - faire un sorte qu'on peut utiliser un monitor sans l'afficher sur l'interface de base mais quand meme avoir ses résultats
-à la fin.
+à la fin. DONE
 
 - Faire en sorte que toute les variables est une unité ?
