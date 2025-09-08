@@ -3,9 +3,6 @@
 {% extends 'common_group.cpp' %}
 {% block maincode %}
 
-    // ros_obj->timefilestatemonitor << "i_state{{owner.name[-1]}}:" + std::to_string(
-    // std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start)
-    // << std::endl;
 
     {{_dynamic_t}}.push_back({{_clock_t}});
 
@@ -86,10 +83,5 @@
             {% endfor %}
     {% endfor %}
     {{N}} = _new_size;
-
-    //Debug Time
-// ros_obj->timefilestatemonitor << "o_state{{owner.name[-1]}}:" + std::to_string(
-//     std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start
-// ) << std::endl;
 
 {% endblock %}
