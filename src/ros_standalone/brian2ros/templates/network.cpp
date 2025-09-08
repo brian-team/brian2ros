@@ -16,7 +16,11 @@ double Network::_last_run_time = 0.0;
 double Network::_last_run_completed_fraction = 0.0;
 bool Network::_globally_stopped = false;
 bool Network::_globally_running = false;
-
+auto debug_main_lines = std::vector<std::string>{
+{% for line in debug_main_lines %}
+    "{{line}}",
+{% endfor %}
+};
 Network::Network()
 {
     t = 0.0;
@@ -90,19 +94,23 @@ void Network::run(const double duration, void (*report_func)(const double, const
                 }
             }
             Clock *obj_clock = objects[i].first;
-            ros_obj->timefileobjects << "i_" + objects[i].name+ ":" + std::to_string(
-std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start)
-<< std::endl;
+
             // Only execute the object if it uses the right clock for this step
             if (curclocks.find(obj_clock) != curclocks.end())
             {
                 codeobj_func func = objects[i].second;
                 if (func)  // code objects can be NULL in cases where we store just the clock
-                    func();
-            }
-            ros_obj->timefileobjects << "o_" + objects[i].name+ ":" + std::to_string(
+                {
+                    ros_obj->timefileobject << "i_" + debug_main_lines[i] + ":" + std::to_string(
 std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start)
 << std::endl;
+                    func();
+                    ros_obj->timefileobject << "o_" + debug_main_lines[i] + ":" + std::to_string(
+std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start)
+<< std::endl;
+                    }
+            }
+            
         }
         for(std::set<Clock*>::iterator i=curclocks.begin(); i!=curclocks.end(); i++)
             (*i)->tick();

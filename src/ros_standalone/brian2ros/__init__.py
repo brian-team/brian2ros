@@ -301,6 +301,8 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
 
         self.file_path = os.path.dirname(os.path.abspath(__file__))
 
+        self.debug_main_lines = []
+
     def build(
         self,
         directory="output",
@@ -909,6 +911,16 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
         # This function is override to generate the main.cpp file with the ROS publisher and subscriber configurations.
         # It also generates the brianros.h file and implements the monitoring configurations adapted to ROS.
         super().generate_main_source(writer)
+
+        network_code = []
+        for func, args in self.main_queue:
+            if func == "run_network":
+                net, netcode = args
+                network_code.extend(netcode)
+        for line in network_code:
+            if "magicnetwork.add" in line:
+                self.debug_main_lines.append(line.split("_run_")[1][:-2])
+                
         # Generate the brianros.h file with the ROS publisher and subscriber configurations.
         brianros_tmp = self.templater.brianros(
             None,
@@ -929,7 +941,15 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
             path=self.file_path.split("/src")[0]
         )
         writer.write("main.bash", main_bash)
-        
+
+    def generate_network_source(self, writer, compiler):
+        maximum_run_time = self._maximum_run_time
+        if maximum_run_time is not None:
+            maximum_run_time = float(maximum_run_time)
+        network_tmp = self.code_object_class().templater.network(
+            None, None, maximum_run_time=maximum_run_time, debug_main_lines=self.debug_main_lines
+        )
+        writer.write("network.*", network_tmp)
          
     def compile_source(self, directory, compiler, debug, clean):
         #! OVERRIDE the compile_source method from the CPPStandaloneDevice class. !#
