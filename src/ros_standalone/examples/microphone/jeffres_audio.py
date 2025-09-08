@@ -5,7 +5,7 @@ import numpy as np
 from scipy.special import softmax
 
 prefs.devices.ros_standalone.buffer_multiplier = 1000
-set_device("ros_standalone", directory="src/src/brian_project", debug=True)
+set_device("ros_standalone", directory="src/src/brian_project", debug=False)
 defaultclock.dt = 1 / 48_000 * second
 
 # Create a ROS Subscriber for audio input
@@ -165,7 +165,7 @@ vel_left : 1 (linked)
 vel_right : 1 (linked)
 veldiff = clip(vel_left - vel_right, -max_vel, max_vel) : 1 (constant over dt)
 '''
-radian = NeuronGroup(1, eqs_rad)
+radian = NeuronGroup(1, eqs_rad, name='radian')
 radian.vel_left = linked_var(direction, 'vel', [0])
 radian.vel_right = linked_var(direction, 'vel', [1]) 
 

@@ -208,9 +208,15 @@ public:
             // This function is called every time a message is received from the topic
             // It will set the values of the variables in the brian object
             
+            #ifdef DEBUG
             // Debug Time
-            timefilebrianros << "i_{{subscriber["name"]}}:" + std::to_string(
-            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - start) + "\n";
+            auto t_debug = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+            timefilebrianros
+                << "i_{{subscriber["name"]}}:"
+                << (t_debug - start) 
+                << '\n';
+            #endif
+            
             // Time calculation
             // This is used to calculate the time between the start of gazebo and the first message
             if(!{{subscriber["name"]}}_test){
@@ -246,13 +252,20 @@ public:
                 {% endif %}
             {% endfor %}
             brian::{{subscriber["var_time"]}}[0] = (double)(current_time - {{subscriber["name"]}}_start);
-
+            
+            #ifdef DEBUG
             // Debug Time
-            timefilebrianros << "o_{{subscriber["name"]}}:" + std::to_string(
-            std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - start) + "\n";
+            t_debug = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+            timefilebrianros
+                << "o_{{subscriber["name"]}}:"
+                << (t_debug - start) 
+                << '\n';
 
-            timefilebrianros << "n_{{subscriber["name"]}}:" + std::to_string(
-            rclcpp::Time(msg->header.stamp).seconds()) + "\n";
+            timefilebrianros
+                << "n_{{subscriber["name"]}}:"
+                << rclcpp::Time(msg->header.stamp).seconds()
+                << '\n';
+            #endif
 
         }
     {%endfor%}

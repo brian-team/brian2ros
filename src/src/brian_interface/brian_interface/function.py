@@ -476,7 +476,7 @@ class B2R_UI_Plugin(Plugin):
             preexec_fn=os.setsid,
         )
         # Wait for Gazebo to start
-        time.sleep(3)
+        time.sleep(5)
         if self.sub.poll() is not None:
             raise Exception(
                 "❌ \033[31m Gazebo failed to start, error code: " + str(self.sub.returncode)

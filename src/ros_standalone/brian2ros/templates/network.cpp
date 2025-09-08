@@ -99,16 +99,25 @@ void Network::run(const double duration, void (*report_func)(const double, const
             if (curclocks.find(obj_clock) != curclocks.end())
             {
                 codeobj_func func = objects[i].second;
-                if (func)  // code objects can be NULL in cases where we store just the clock
+                if (func)  
                 {
-                    ros_obj->timefileobject << "i_" + debug_main_lines[i] + ":" + std::to_string(
-std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start)
-<< std::endl;
-                    func();
-                    ros_obj->timefileobject << "o_" + debug_main_lines[i] + ":" + std::to_string(
-std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start)
-<< std::endl;
-                    }
+                // code objects can be NULL in cases where we store just the clock
+                #ifdef DEBUG
+                auto t_debug = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+                ros_obj->timefileobject 
+                    << "i_" << debug_main_lines[i] << ":" 
+                    << (t_debug - ros_obj->start) 
+                    << '\n';
+                #endif
+                func();
+                #ifdef DEBUG
+                t_debug = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+                ros_obj->timefileobject 
+                    << "o_" << debug_main_lines[i] << ":" 
+                    << (t_debug - ros_obj->start) 
+                    << '\n';
+                #endif
+                }
             }
             
         }

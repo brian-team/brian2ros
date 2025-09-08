@@ -230,7 +230,13 @@ class Subscriber(Function):
             + """(double t,int var_index){""")
         
         code += """
-        ros_obj->timefileobject << "i_brian""" + self.name + """:" + std::to_string(std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start) + '\\n\';
+        #ifdef DEBUG
+        auto t_debug = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        ros_obj->timefileobject 
+            << "i_brian""" + self.name + """:" 
+            << (t_debug - ros_obj->start) 
+            << '\\n\';
+        #endif
         """
         for i, (out_name, out_value) in enumerate(self.output.items()):
         
@@ -242,18 +248,38 @@ class Subscriber(Function):
 
             tail_""" + out_name + """ = (static_cast<int>(std::round(t / brian::_array_defaultclock_dt[0]))) % """ + str(len(out_value) * prefs.devices.ros_standalone.buffer_multiplier) + """;
             int nb_""" + out_name + """_while = 0;
-            //std::cout << "tail_""" + out_name + """ : " << tail_""" + out_name + """ << std::endl;
             while(brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] < previous_frame_id_""" + out_name + """ || brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """] == 0){ 
+                
                 std::this_thread::sleep_for(std::chrono::duration<double>(brian::_array_defaultclock_dt[0]));
-                ros_obj->timefileobject << "s_brianaudio:" + std::to_string(std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start) + '\\n\' ;
+                
+                #ifdef DEBUG
+                t_debug = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+                ros_obj->timefileobject 
+                    << "s_brian""" + self.name + """:" 
+                    << (t_debug - ros_obj->start) 
+                    << '\\n\';
+                #endif
                 if(Network::_globally_stopped){
-                    ros_obj->timefileobject << "o_brian""" + self.name + """:" + std::to_string(std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start) + '\\n\' ;
+                    #ifdef DEBUG
+                    t_debug = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+                    ros_obj->timefileobject 
+                        << "o_brian""" + self.name + """:" 
+                        << (t_debug - ros_obj->start) 
+                        << '\\n\';
+                    #endif
                     return 0;
                     }
             }
 
             previous_frame_id_""" + out_name + """ = brian::_array_""" + self.name + """_frame_id_""" + out_name + """[tail_""" + out_name + """];
-            ros_obj->timefileobject << "o_brian""" + self.name + """:" + std::to_string(std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count() - ros_obj->start) + '\\n\' ;
+            #ifdef DEBUG
+            t_debug = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+            ros_obj->timefileobject 
+                << "o_brian""" + self.name + """:" 
+                << (t_debug - ros_obj->start) 
+                << '\\n\';
+            #endif
+            
             return brian::_array_""" + self.name + """_var_""" + out_name + """[tail_""" + out_name + """];
             }
             """
@@ -780,6 +806,8 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
     ):
         #! OVERRIDE the generate_makefile method from the CPPStandaloneDevice class. !#
         # This function is override to generate a CMakeLists.txt file instead of a Makefile
+        if debug:
+            compiler_flags += " -DDEBUG"
 
         cmakefile = self.templater.CMakeLists(
             None,
@@ -919,7 +947,7 @@ class ROSStandaloneDevice(device.CPPStandaloneDevice):
                 network_code.extend(netcode)
         for line in network_code:
             if "magicnetwork.add" in line:
-                self.debug_main_lines.append(line.split("_run_")[1][:-2])
+                self.debug_main_lines.append(line.split(',')[1].split("_run_", maxsplit=1)[1][:-2])
                 
         # Generate the brianros.h file with the ROS publisher and subscriber configurations.
         brianros_tmp = self.templater.brianros(
