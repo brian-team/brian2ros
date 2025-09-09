@@ -195,7 +195,7 @@ private:
   // The left and right channels are delayed by a small amount to simulate stereo sound.
   void get_sample_double_sin()
   {
-    constexpr double source_orientation_1 = M_PI / 4; // Initial orientation of the sound source
+    constexpr double source_orientation_1 = M_PI / 2; // Initial orientation of the sound source
     constexpr double source_orientation_2 = -M_PI / 2; // Initial orientation of the sound source
 
     constexpr double frequency_1 = 440.0;

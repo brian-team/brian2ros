@@ -174,8 +174,8 @@ wheel = TwistPublisher(
     input={"angular.z": radian.veldiff},
 )
 get_device().add_publisher(wheel) 
-#state_ears = StateMonitor(ears, ['yn', 'xn', 'thresh', 'x'], record=True)
-
+state_ears = StateMonitor(ears, ['yn', 'xn', 'thresh', 'x'], record=True)
+state_neurons = StateMonitor(neurons, 'v', record=True)
 #s_noiselevel = StateMonitor(adaptive_thresh, 'noiselevel', record=True)
 
 dir_vel = StateMonitor(direction, 'vel', record=True)
@@ -187,4 +187,4 @@ neurons_spikes = SpikeMonitor(neurons)
 #radar_spikes = SpikeMonitor(radar)
 
 get_device().publish_monitors([ears_spikes, dir_vel])
-run(60 * second)
+run(8 * second)
