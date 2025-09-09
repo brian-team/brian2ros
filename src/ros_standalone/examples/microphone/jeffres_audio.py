@@ -187,4 +187,4 @@ neurons_spikes = SpikeMonitor(neurons)
 #radar_spikes = SpikeMonitor(radar)
 
 get_device().publish_monitors([ears_spikes, dir_vel])
-run(8 * second)
+run(60 * second)

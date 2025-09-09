@@ -96,7 +96,16 @@ AudioRecorder(const std::string &wav_path = "", int max_frames = 20000)
       RCLCPP_INFO(this->get_logger(), "Sinusoidal audio input for testing with gz.");
       timer_sin = this->create_wall_timer(
           period, std::bind(&AudioRecorder::get_sample_sin, this));
-    }    
+    }   
+    else if (wav_path_ == "sin_double")
+    {
+      pos_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
+        "odom", qos_audio_realtime, std::bind(&AudioRecorder::odom_callback, this, _1)); 
+
+      RCLCPP_INFO(this->get_logger(), "Double Sinusoidal audio input for testing with gz.");
+      timer_sin = this->create_wall_timer(
+          period, std::bind(&AudioRecorder::get_sample_double_sin, this));
+    } 
     else if (!wav_path_.empty()) 
     {
       RCLCPP_INFO(this->get_logger(), "Read and publish WAV file : %s", wav_path_.c_str());
@@ -173,20 +182,79 @@ private:
     change_orientation = false;
     double z = msg->pose.pose.orientation.z;
     double w = msg->pose.pose.orientation.w;
-    double rad_z = atan2(2*(w*z), 1 - 2*(z*z));
-    orientation = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
+    rad_z = atan2(2*(w*z), 1 - 2*(z*z));
+    //orientation = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
     RCLCPP_INFO(this->get_logger(), "Orientation of sound source: %f rad", rad_z * 180 / M_PI);
-    RCLCPP_INFO(this->get_logger(), "Phase shift: %f rad", orientation * 180 / M_PI);
+    // RCLCPP_INFO(this->get_logger(), "Phase shift: %f rad", orientation * 180 / M_PI);
     // Update the source orientation based on the current orientation of the sound source
   }
-  double source_orientation = M_PI / 2; // Initial orientation of the sound source
   bool change_orientation = true;
+  double rad_z = 0.0;
   // This function generates a sine wave signal for testing purposes.
   // It simulates a sound wave with a frequency of 440 Hz (A4 note) and a phase shift.
   // The left and right channels are delayed by a small amount to simulate stereo sound.
+  void get_sample_double_sin()
+  {
+    constexpr double source_orientation_1 = M_PI / 4; // Initial orientation of the sound source
+    constexpr double source_orientation_2 = -M_PI / 2; // Initial orientation of the sound source
 
+    constexpr double frequency_1 = 440.0;
+    constexpr double frequency_2 = 440.0; 
+
+    constexpr double amplitude_1 = 32767.0 / 2; // Max amplitude for 16-bit audio
+    constexpr double amplitude_2 = 32767.0 / 2;
+
+    constexpr double sound_speed = 343.0;
+    constexpr double distance = 0.2;
+    constexpr double max_delay = distance / sound_speed;
+
+    for (size_t i = 0; i < BUFFER_SIZE; ++i) 
+    {
+      orientation = source_orientation_1 - rad_z; // Calculate the phase shift based on the orientation of the sound source
+
+      double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
+
+      double left_delay_1 = -0.5 * max_delay * sin(orientation);
+      double right_delay_1 = 0.5 * max_delay * sin(orientation);
+
+      orientation = source_orientation_2 - rad_z; // Calculate the phase shift based on the orientation of the sound source
+
+      double left_delay_2 = -0.5 * max_delay * sin(orientation);
+      double right_delay_2 = 0.5 * max_delay * sin(orientation);
+
+      int16_t left_sample_1 = static_cast<int16_t>(amplitude_1 * sin(2 * M_PI * frequency_1 * (t - left_delay_1)));
+      int16_t right_sample_1 = static_cast<int16_t>(amplitude_1 * sin(2 * M_PI * frequency_1 * (t - right_delay_1)));
+
+      int16_t left_sample_2 = static_cast<int16_t>(amplitude_2 * sin(2 * M_PI * frequency_2 * (t - left_delay_2)));
+      int16_t right_sample_2 = static_cast<int16_t>(amplitude_2 * sin(2 * M_PI * frequency_2 * (t - right_delay_2)));
+
+      msg.left.data[i] = left_sample_1 + left_sample_2;
+      msg.right.data[i] = right_sample_1 + right_sample_2;
+    }
+
+    if (frame_count_sin % 100 == 0)
+      //RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count_sin);
+      RCLCPP_INFO(this->get_logger(), "Orientation of sound source: %f rad", rad_z * 180 / M_PI);
+
+    if (frame_count_sin >= max_frames_)
+    {
+      RCLCPP_INFO(this->get_logger(), "Maximum number of frames reached, stopping node.");
+      rclcpp::shutdown();
+    }
+
+    msg.header.frame_id = std::to_string(frame_count_sin);
+    msg.header.stamp = this->now();
+    frame_count_sin++;
+    if (change_orientation)
+    {
+    orientation += M_PI / 250; // Increment the phase shift for the next sample
+    }
+    publisher->publish(msg);
+  }
   void get_sample_sin() 
   {
+    constexpr double source_orientation = M_PI / 2; // Initial orientation of the sound source
+
     constexpr double frequency = 440.0;
     constexpr double amplitude = 32767.0 / 2; // Max amplitude for 16-bit audio
     constexpr double sound_speed = 343.0;
@@ -195,6 +263,7 @@ private:
 
     for (size_t i = 0; i < BUFFER_SIZE; ++i) 
     {
+      orientation = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
       double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
       double left_delay = -0.5 * max_delay * sin(orientation);
       double right_delay = 0.5 * max_delay * sin(orientation);
