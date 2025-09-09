@@ -31,7 +31,7 @@ class OdomSubscriber(Node):
     def listener_callback(self, msg: Odometry):
         # Extraire les données
         ori = msg.pose.pose.orientation
-        yaw = np.arctan2(np.array([2*(ori.w*ori.z), 1 - 2*(ori.z*ori.z)]))
+        yaw = np.arctan2(np.array([2*(ori.w*ori.z)]), np.array([1 - 2*(ori.z*ori.z)]))
 
 
         # Sauvegarde CSV
