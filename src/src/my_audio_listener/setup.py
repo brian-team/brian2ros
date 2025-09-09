@@ -17,10 +17,10 @@ setup(
     maintainer_email='cauwet@isir.upmc.fr',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
                     'audio_listener = my_audio_listener.listener:main',
+                    'audio_listener_odom = my_audio_listener.listener_odom:main',
         ],
     },
 )
