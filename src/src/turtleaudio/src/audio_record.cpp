@@ -10,6 +10,7 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/qos.hpp"
 #include <sndfile.h>
+#include <random>  
 
 #define CHANNELS 2 // Stéréo
 #define SAMPLE_RATE 48000
@@ -87,6 +88,15 @@ AudioRecorder(const std::string &wav_path = "", int max_frames = 20000)
       RCLCPP_INFO(this->get_logger(), "Real-time audio input with PortAudio.");
       timer = this->create_wall_timer(
           period, std::bind(&AudioRecorder::get_sample, this));
+    }
+    else if (wav_path_ == "noise")
+    {
+      pos_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
+        "odom", qos_audio_realtime, std::bind(&AudioRecorder::odom_callback, this, _1)); 
+
+      RCLCPP_INFO(this->get_logger(), "White noise audio input for testing.");
+      timer = this->create_wall_timer(
+          period, std::bind(&AudioRecorder::get_sample_noise, this));
     }
     else if (wav_path_ == "sin_gz")
     {
@@ -198,8 +208,8 @@ private:
     constexpr double source_orientation_1 = M_PI / 2; // Initial orientation of the sound source
     constexpr double source_orientation_2 = -M_PI / 2; // Initial orientation of the sound source
 
-    constexpr double frequency_1 = 440.0;
-    constexpr double frequency_2 = 440.0; 
+    constexpr double frequency_1 = 300.0;
+    constexpr double frequency_2 = 300.0; 
 
     constexpr double amplitude_1 = 32767.0 / 2; // Max amplitude for 16-bit audio
     constexpr double amplitude_2 = 32767.0 / 2;
@@ -294,6 +304,67 @@ private:
     }
     publisher->publish(msg);
   }
+
+
+  void get_sample_noise() 
+  {
+      constexpr double source_orientation = M_PI / 2; 
+      constexpr double amplitude = 32767.0 / 2;       
+      constexpr double sound_speed = 343.0;
+      constexpr double distance = 0.2;
+      constexpr double max_delay = distance / sound_speed;
+
+      static std::mt19937 rng(std::random_device{}());
+      static std::uniform_real_distribution<double> dist(-amplitude, amplitude);
+      static int step = 0;
+      static std::vector<double> noise_buffer(BUFFER_SIZE *2); 
+      for (size_t i = 0; i < noise_buffer.size(); ++i) {
+          noise_buffer[i] = dist(rng);
+          step++;
+      }
+      if (step > BUFFER_SIZE) {
+          step = 0;
+      }
+
+      for (size_t i = 0; i < BUFFER_SIZE; ++i) 
+      {
+          orientation = source_orientation - rad_z;
+
+          double left_delay  = -0.5 * max_delay * sin(orientation);
+          double right_delay =  0.5 * max_delay * sin(orientation);
+          int left_shift  = static_cast<int16_t>(left_delay * SAMPLE_RATE);
+          int right_shift = static_cast<int16_t>(right_delay * SAMPLE_RATE);
+
+          int left_index  = std::max<int>(0, std::min<int>(i + left_shift, noise_buffer.size()-1));
+          int right_index = std::max<int>(0, std::min<int>(i + right_shift, noise_buffer.size()-1));
+          std::cout << "Left shift: " << left_index << ", Right shift: " << right_index << std::endl;
+
+          int16_t left_sample  = static_cast<int16_t>(noise_buffer[left_index]);
+          int16_t right_sample = static_cast<int16_t>(noise_buffer[right_index]);
+
+          msg.left.data[i]  = left_sample;
+          msg.right.data[i] = right_sample;
+      }
+
+      if (frame_count_sin % 100 == 0)
+          RCLCPP_INFO(this->get_logger(), "Phase shift in get_sample_noise : %f", orientation * 180 / M_PI);
+
+      if (frame_count_sin >= max_frames_)
+      {
+          RCLCPP_INFO(this->get_logger(), "Maximum number of frames reached, stopping node.");
+          rclcpp::shutdown();
+      }
+
+      msg.header.frame_id = std::to_string(frame_count_sin);
+      msg.header.stamp = this->now();
+      frame_count_sin++;
+
+      if (change_orientation)
+          orientation += M_PI / 250;
+
+      publisher->publish(msg);
+  }
+
 
   // This function reads audio samples from the input stream and publishes them as StereoAudioBlock messages.
   // It uses PortAudio to read the audio data and fills the left and right channels of the message.
