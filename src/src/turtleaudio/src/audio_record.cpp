@@ -194,7 +194,7 @@ private:
     double w = msg->pose.pose.orientation.w;
     rad_z = atan2(2*(w*z), 1 - 2*(z*z));
     //orientation = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
-    RCLCPP_INFO(this->get_logger(), "Orientation of sound source: %f rad", rad_z * 180 / M_PI);
+    RCLCPP_INFO(this->get_logger(), "Orientation of robot: %f rad", rad_z * 180 / M_PI);
     // RCLCPP_INFO(this->get_logger(), "Phase shift: %f rad", orientation * 180 / M_PI);
     // Update the source orientation based on the current orientation of the sound source
   }
@@ -316,34 +316,34 @@ private:
 
       static std::mt19937 rng(std::random_device{}());
       static std::uniform_real_distribution<double> dist(-amplitude, amplitude);
-      static int step = 0;
+      static int step_buffer = 0;
+      static int step_data = 0;
       static std::vector<double> noise_buffer(BUFFER_SIZE *2); 
       for (size_t i = 0; i < noise_buffer.size(); ++i) {
-          noise_buffer[i] = dist(rng);
-          step++;
+          noise_buffer[step_buffer] = dist(rng);
+          step_buffer = (step_buffer + 1) % (BUFFER_SIZE * 2);
       }
-      if (step > BUFFER_SIZE) {
-          step = 0;
-      }
+      
+      orientation = source_orientation - rad_z;
 
       for (size_t i = 0; i < BUFFER_SIZE; ++i) 
       {
-          orientation = source_orientation - rad_z;
 
           double left_delay  = -0.5 * max_delay * sin(orientation);
           double right_delay =  0.5 * max_delay * sin(orientation);
           int left_shift  = static_cast<int16_t>(left_delay * SAMPLE_RATE);
           int right_shift = static_cast<int16_t>(right_delay * SAMPLE_RATE);
 
-          int left_index  = std::max<int>(0, std::min<int>(i + left_shift, noise_buffer.size()-1));
-          int right_index = std::max<int>(0, std::min<int>(i + right_shift, noise_buffer.size()-1));
-          std::cout << "Left shift: " << left_index << ", Right shift: " << right_index << std::endl;
+          int left_index  = std::max<int>(0, std::min<int>((step_data + left_shift)%noise_buffer.size(), noise_buffer.size()-1));
+          int right_index = std::max<int>(0, std::min<int>((step_data + right_shift)%noise_buffer.size(), noise_buffer.size()-1));
+          //std::cout << "Left shift: " << left_index << ", Right shift: " << right_index << std::endl;
 
           int16_t left_sample  = static_cast<int16_t>(noise_buffer[left_index]);
           int16_t right_sample = static_cast<int16_t>(noise_buffer[right_index]);
 
           msg.left.data[i]  = left_sample;
           msg.right.data[i] = right_sample;
+          step_data++;
       }
 
       if (frame_count_sin % 100 == 0)

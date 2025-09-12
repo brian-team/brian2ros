@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.special import softmax
 
-prefs.devices.ros_standalone.buffer_multiplier = 1000
+prefs.devices.ros_standalone.buffer_multiplier = 500
 set_device("ros_standalone", directory="src/src/brian_project", debug=False)
 defaultclock.dt = 1 / 48_000 * second
 
@@ -174,7 +174,7 @@ wheel = TwistPublisher(
     input={"angular.z": radian.veldiff},
 )
 get_device().add_publisher(wheel) 
-#state_ears = StateMonitor(ears, ['yn', 'xn', 'thresh', 'x'], record=True)
+state_ears = StateMonitor(ears, ['yn', 'xn', 'thresh', 'x'], record=True)
 #state_neurons = StateMonitor(neurons, 'v', record=True)
 #s_noiselevel = StateMonitor(adaptive_thresh, 'noiselevel', record=True)
 
@@ -186,5 +186,5 @@ ears_spikes = SpikeMonitor(ears)
 neurons_spikes = SpikeMonitor(neurons)
 #radar_spikes = SpikeMonitor(radar)
 
-#get_device().publish_monitors([ears_spikes, dir_vel])
-run(6000 * second)
+#get_device().publish_monitors([ears_spikes, neurons_spikes, state_ears])
+run(10 * second)
