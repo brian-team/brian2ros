@@ -107,6 +107,15 @@ AudioRecorder(const std::string &wav_path = "", int max_frames = 20000)
       timer_sin = this->create_wall_timer(
           period, std::bind(&AudioRecorder::get_sample_sin, this));
     }   
+    else if (wav_path_ == "sin_move")
+    {
+      pos_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
+        "odom", qos_audio_realtime, std::bind(&AudioRecorder::odom_callback, this, _1)); 
+
+      RCLCPP_INFO(this->get_logger(), "Moving Sinusoidal audio input for testing with gz.");
+      timer_sin = this->create_wall_timer(
+          period, std::bind(&AudioRecorder::get_sample_sin_move, this));
+    }
     else if (wav_path_ == "sin_double")
     {
       pos_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
@@ -305,6 +314,51 @@ private:
     publisher->publish(msg);
   }
 
+  void get_sample_sin_move() 
+  {
+    constexpr double source_orientation_start = M_PI / 2; // Initial orientation of the sound source
+
+    constexpr double frequency = 440.0;
+    constexpr double amplitude = 32767.0 / 2; // Max amplitude for 16-bit audio
+    constexpr double sound_speed = 343.0;
+    constexpr double distance = 0.2;
+    constexpr double max_delay = distance / sound_speed;
+    for (size_t i = 0; i < BUFFER_SIZE; ++i) 
+    {
+      double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
+
+      double source_orientation = source_orientation_start + (2 * M_PI * cos((M_PI / 3) * t));
+      orientation = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
+
+      double left_delay = -0.5 * max_delay * sin(orientation);
+      double right_delay = 0.5 * max_delay * sin(orientation);
+
+      int16_t left_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * (t - left_delay)));
+      int16_t right_sample = static_cast<int16_t>(amplitude * sin(2 * M_PI * frequency * (t - right_delay)));
+
+      msg.left.data[i] = left_sample;
+      msg.right.data[i] = right_sample;
+    }
+
+    if (frame_count_sin % 100 == 0)
+      //RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count_sin);
+      RCLCPP_INFO(this->get_logger(), "Phase shift in get_sample : %f", orientation * 180 / M_PI);
+
+    if (frame_count_sin >= max_frames_)
+    {
+      RCLCPP_INFO(this->get_logger(), "Maximum number of frames reached, stopping node.");
+      rclcpp::shutdown();
+    }
+
+    msg.header.frame_id = std::to_string(frame_count_sin);
+    msg.header.stamp = this->now();
+    frame_count_sin++;
+    if (change_orientation)
+    {
+    orientation += M_PI / 250; // Increment the phase shift for the next sample
+    }
+    publisher->publish(msg);
+  }
 
   void get_sample_noise() 
   {
