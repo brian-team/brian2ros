@@ -263,7 +263,7 @@ public:
 
             timefilebrianros
                 << "n_{{subscriber["name"]}}:"
-                << rclcpp::Time(msg->header.stamp).seconds()
+                << (rclcpp::Time(msg->header.stamp).seconds() - start/1e9)
                 << '\n';
             #endif
 

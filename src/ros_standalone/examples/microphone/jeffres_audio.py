@@ -5,7 +5,7 @@ import numpy as np
 from scipy.special import softmax
 
 prefs.devices.ros_standalone.buffer_multiplier = 500
-set_device("ros_standalone", directory="src/src/brian_project", debug=False)
+set_device("ros_standalone", directory="src/src/brian_project", debug=True)
 defaultclock.dt = 1 / 48_000 * second
 
 # Create a ROS Subscriber for audio input
@@ -33,7 +33,7 @@ tau_thresh = 5*ms
 
 # Filter parameters
 f_min = 100 * Hz
-f_max = 2000 * Hz  
+f_max = 2500 * Hz  
 nb_band = 16
 BW = 0.2
 fs = 48000 * Hz 
@@ -50,7 +50,7 @@ num_direction = 2 # Left and Right
 tau_direction = 5 * ms  
 tau_target = 100 * ms
 max_vel = 1.82 
-alpha_vel = 0.2 # acceleration factor
+alpha_vel = 0.8 # acceleration factor
 a_front = 0.05 # Determines the front
 min_front = num_neurons//2 - np.floor(num_neurons*a_front/2)
 max_front = (num_neurons//2 + np.floor(num_neurons*a_front/2)) + 1
@@ -186,5 +186,5 @@ ears_spikes = SpikeMonitor(ears)
 neurons_spikes = SpikeMonitor(neurons)
 #radar_spikes = SpikeMonitor(radar)
 
-get_device().publish_monitors([ears_spikes, neurons_spikes])
+get_device().publish_monitors([ears_spikes, neurons_spikes]) #, radar_spikes])
 run(60 * second)
