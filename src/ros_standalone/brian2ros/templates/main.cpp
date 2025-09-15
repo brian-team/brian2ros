@@ -55,10 +55,12 @@
         
     
     void brian_running(const std::vector<std::string> args){
-        std::cout << "Starting brian_running" << std::endl;
         auto t_start = std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
+        std::cout << "Starting brian_running" << std::endl;
+
         {{'\n'.join(code_lines['before_start'])|autoindent}}
         brian_start();
+        std::cout << "Brian simulation started" << std::endl;
         {{'\n'.join(code_lines['after_start'])|autoindent}}
         {
             using namespace brian;

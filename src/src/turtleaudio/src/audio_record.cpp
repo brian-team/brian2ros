@@ -316,18 +316,25 @@ private:
 
   void get_sample_sin_move() 
   {
-    constexpr double source_orientation_start = M_PI / 2; // Initial orientation of the sound source
 
     constexpr double frequency = 440.0;
     constexpr double amplitude = 32767.0 / 2; // Max amplitude for 16-bit audio
     constexpr double sound_speed = 343.0;
     constexpr double distance = 0.2;
     constexpr double max_delay = distance / sound_speed;
+    static double time_since = 0.0;
+    static double time_now = 0.0;
+    static int step_info = 1;
+    static double tot_speed = 0.0;
+    static double source_since = 0.0;
+    static double source_now = 0.0;
+    static double mean_speed = 0.0;
+    double source_orientation;
     for (size_t i = 0; i < BUFFER_SIZE; ++i) 
     {
-      double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
+      double t = static_cast<double>(this->now().nanoseconds()) / 1e9; //static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
 
-      double source_orientation = source_orientation_start + (2 * M_PI * cos((M_PI / 3) * t));
+      source_orientation = (2 * M_PI * cos((M_PI / 6) * t));
       orientation = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
 
       double left_delay = -0.5 * max_delay * sin(orientation);
@@ -341,8 +348,16 @@ private:
     }
 
     if (frame_count_sin % 100 == 0)
-      //RCLCPP_INFO(this->get_logger(), "Frame %d", frame_count_sin);
-      RCLCPP_INFO(this->get_logger(), "Phase shift in get_sample : %f", orientation * 180 / M_PI);
+    {
+      time_now = this->now().nanoseconds() / 1e9;
+      source_now = abs(source_orientation);
+      tot_speed += abs(source_now - source_since) / abs(time_now - time_since);
+      mean_speed = tot_speed / step_info;
+      RCLCPP_INFO(this->get_logger(), "Rotation speed (mean): %f deg/s", mean_speed * 180 / M_PI);
+      time_since = time_now;
+      source_since = source_now;
+      step_info++;
+    }
 
     if (frame_count_sin >= max_frames_)
     {
@@ -353,10 +368,6 @@ private:
     msg.header.frame_id = std::to_string(frame_count_sin);
     msg.header.stamp = this->now();
     frame_count_sin++;
-    if (change_orientation)
-    {
-    orientation += M_PI / 250; // Increment the phase shift for the next sample
-    }
     publisher->publish(msg);
   }
 
