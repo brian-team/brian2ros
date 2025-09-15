@@ -10,7 +10,8 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/qos.hpp"
 #include <sndfile.h>
-#include <random>  
+#include <random> 
+#include <fstream>
 
 #define CHANNELS 2 // Stéréo
 #define SAMPLE_RATE 48000
@@ -58,6 +59,8 @@ PaStream *_init_input_stream()
 class AudioRecorder : public rclcpp::Node
 {
 public:
+  std::ofstream timefile;
+
 AudioRecorder(const std::string &wav_path = "", int max_frames = 20000)
     : Node("audio_recorder"), wav_path_(wav_path), max_frames_(max_frames)
   {
@@ -111,7 +114,12 @@ AudioRecorder(const std::string &wav_path = "", int max_frames = 20000)
     {
       pos_subscriber = this->create_subscription<nav_msgs::msg::Odometry>(
         "odom", qos_audio_realtime, std::bind(&AudioRecorder::odom_callback, this, _1)); 
-
+      
+      timefile.open("debug_orientation.txt", std::ios::app);
+      if (!timefile.is_open()) {
+          std::cerr << "Erreur : impossible d'ouvrir le fichier." << std::endl;
+          return;
+      }
       RCLCPP_INFO(this->get_logger(), "Moving Sinusoidal audio input for testing with gz.");
       timer_sin = this->create_wall_timer(
           period, std::bind(&AudioRecorder::get_sample_sin_move, this));
@@ -332,9 +340,9 @@ private:
     double source_orientation;
     for (size_t i = 0; i < BUFFER_SIZE; ++i) 
     {
-      double t = static_cast<double>(this->now().nanoseconds()) / 1e9; //static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
+      double t = static_cast<double>(sample_index_sin++) / SAMPLE_RATE;
 
-      source_orientation = (2 * M_PI * cos((M_PI / 6) * t));
+      source_orientation = (M_PI * cos((M_PI / 15) * t));
       orientation = source_orientation - rad_z; // Calculate the phase shift based on the orientation of the sound source
 
       double left_delay = -0.5 * max_delay * sin(orientation);
@@ -345,18 +353,28 @@ private:
 
       msg.left.data[i] = left_sample;
       msg.right.data[i] = right_sample;
+      
+
     }
 
-    if (frame_count_sin % 100 == 0)
+    if (frame_count_sin % 1 == 0)
     {
-      time_now = this->now().nanoseconds() / 1e9;
-      source_now = abs(source_orientation);
-      tot_speed += abs(source_now - source_since) / abs(time_now - time_since);
-      mean_speed = tot_speed / step_info;
-      RCLCPP_INFO(this->get_logger(), "Rotation speed (mean): %f deg/s", mean_speed * 180 / M_PI);
-      time_since = time_now;
-      source_since = source_now;
-      step_info++;
+      timefile
+          << "o:"
+          << source_orientation * 180 / M_PI 
+          << '\n';
+      timefile
+          << "odom:"
+          << rad_z * 180 / M_PI
+          << '\n';
+      // time_now = this->now().nanoseconds() / 1e9;
+      // source_now = abs(source_orientation);
+      // tot_speed += abs(source_now - source_since) / abs(time_now - time_since);
+      // mean_speed = tot_speed / step_info;
+      // RCLCPP_INFO(this->get_logger(), "Rotation speed (mean): %f deg/s", mean_speed * 180 / M_PI);
+      // time_since = time_now;
+      // source_since = source_now;
+      // step_info++;
     }
 
     if (frame_count_sin >= max_frames_)
@@ -454,8 +472,8 @@ private:
 
     for (size_t i = 0; i < BUFFER_SIZE; ++i) 
     {
-      *dst_left++ = *src++;
-      *dst_right++ = *src++;
+      *dst_left++ = *src++ * 2; // Left channel
+      *dst_right++ = *src++ * 2; // Right channel
     }
 
     msg.header.frame_id = std::to_string(frame_count);

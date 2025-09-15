@@ -192,9 +192,12 @@ double {{codeobj}}_profiling_info = 0.0;
 void _init_arrays()
 {
     using namespace brian;
+    
+    std::cout << "Initializing arrays..." << std::endl;
 
     // Arrays initialized to 0
     {% for var, varname in zero_arrays | sort(attribute='1') %}
+    std::cout << "Initializing array {{varname}}..." << std::endl;
     {% if varname in dynamic_array_specs.values() %}
     {{varname}}.resize({{var.size}});
     {% else %}
@@ -205,6 +208,7 @@ void _init_arrays()
 
     {% endfor %}
 
+    std::cout << "Initializing arange arrays..." << std::endl;
     // Arrays initialized to an "arange"
     {% for var, varname, start in arange_arrays | sort(attribute='1')%}
     {% if varname in dynamic_array_specs.values() %}
@@ -216,7 +220,7 @@ void _init_arrays()
     for(int i=0; i<{{var.size}}; i++) {{varname}}[i] = {{start}} + i;
 
     {% endfor %}
-
+    std::cout << "Initializing static arrays..." << std::endl;
     // static arrays
     {% for (name, dtype_spec, N, filename) in static_array_specs | sort %}
     {% if name in dynamic_array_specs.values() %}
@@ -225,7 +229,7 @@ void _init_arrays()
     {{name}} = new {{dtype_spec}}[{{N}}];
     {% endif %}
     {% endfor %}
-
+    std::cout << "Loading static arrays from files..." << std::endl;
     // Random number generator states
     std::random_device rd;
     for (int i=0; i<{{openmp_pragma('get_num_threads')}}; i++)

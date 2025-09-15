@@ -20,7 +20,7 @@ audio = Subscriber(
 # EARS PARAMETERS
 
 sound_speed = 343.0*metre/second
-distance_between_ears = 0.2*metre
+distance_between_ears = 0.22*metre
 sigma_ear = .1
 tau_ear = 0.5*ms
 max_delay = distance_between_ears / sound_speed
@@ -33,7 +33,7 @@ tau_thresh = 5*ms
 
 # Filter parameters
 f_min = 100 * Hz
-f_max = 2500 * Hz  
+f_max = 2000 * Hz  
 nb_band = 16
 BW = 0.2
 fs = 48000 * Hz 
@@ -128,7 +128,7 @@ dv/dt = -v / tau : 1
 neurons = NeuronGroup(num_neurons * nb_band, eqs_neurons, threshold='v>1',
                        reset='v=0', name='neurons', method='euler')
 # Connect ears to neurons
-synapses = Synapses(ears, neurons, on_pre='v += .6')
+synapses = Synapses(ears, neurons, on_pre='v += .65')
 synapses.connect('i % nb_band == j // num_neurons')  
 
 synapses.delay['i//nb_band==1'] = '(1.0*(j%num_neurons))/(num_neurons-1)*1.1*max_delay'
@@ -174,7 +174,7 @@ wheel = TwistPublisher(
     input={"angular.z": radian.veldiff},
 )
 get_device().add_publisher(wheel) 
-state_ears = StateMonitor(ears, ['yn', 'xn', 'thresh', 'x'], record=True)
+#state_ears = StateMonitor(ears, ['yn', 'xn', 'thresh', 'x'], record=True)
 #state_neurons = StateMonitor(neurons, 'v', record=True)
 #s_noiselevel = StateMonitor(adaptive_thresh, 'noiselevel', record=True)
 
@@ -186,5 +186,5 @@ ears_spikes = SpikeMonitor(ears)
 neurons_spikes = SpikeMonitor(neurons)
 #radar_spikes = SpikeMonitor(radar)
 
-#get_device().publish_monitors([ears_spikes, neurons_spikes, state_ears])
-run(10 * second)
+get_device().publish_monitors([ears_spikes, neurons_spikes])
+run(60 * second)
